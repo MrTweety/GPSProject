@@ -7,7 +7,7 @@ class ProfileScreen extends Component {
         render() {
             return (
                 <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
-                    <Text>This is the ProfileScreen</Text>
+                    <Text>This is the ProfileScreen22</Text>
                 </View>      
             );
         }

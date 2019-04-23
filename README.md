@@ -11,4 +11,6 @@ Install the `react-navigation` package in your React Native project.
 npm install --save react-navigation
 
 npm install react-navigation-material-bottom-tabs react-native-paper
+
+npm install --save firebase
 ```
