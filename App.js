@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, Button, Image, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Button, Image, Dimensions, ScrollView } from 'react-native';
 import { createSwitchNavigator,createStackNavigator, createBottomTabNavigator, createDrawerNavigator, createAppContainer,DrawerItems, SafeAreaView  } from 'react-navigation';
 import { createMaterialBottomTabNavigator } from "react-navigation-material-bottom-tabs";
 
@@ -9,13 +9,13 @@ import { Ionicons, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeScreen from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import MapScreen from './screens/MapScreen';
+import MapScreen2 from './screens/SaveMap';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoadingScreen from './screens/LoadingScreen';
 
 import firebase  from  'firebase';
 import {firebaseConfig} from './config';
-import { ScrollView } from 'react-native-gesture-handler';
 
 firebase.initializeApp(firebaseConfig);
 const{width} = Dimensions.get('window');
@@ -41,17 +41,6 @@ const CustomDrawerContentComponent  = (props) => (
     </ScrollView>
   </SafeAreaView>
 );
-
-class MapScreen2 extends Component {
-
-  render() {
-      return (
-          <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
-              <Text>This is the MapScreen2</Text>
-          </View>   
-      );
-  }
-}
 
 const DashboardTabNavigator = createMaterialBottomTabNavigator({
   Home:  {

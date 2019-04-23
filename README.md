@@ -19,4 +19,6 @@ npm install react-navigation-material-bottom-tabs react-native-paper
 Install the `firebase` package in your React Native project.
 ```sh
 npm install --save firebase
+
+npm install --save react-native-pan-controller
 ```
