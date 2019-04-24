@@ -387,7 +387,7 @@ export default class MapScreen extends React.Component {
             {coordinates2.length > 1 ? (
               <MapView.Polyline
                 coordinates={coordinates2}
-                strokeColor="#63A0FF" // fallback for when `strokeColors` is not supported by the map-provider
+                strokeColor="#63A0FF" 
 
                 strokeWidth={8}
               />
@@ -398,7 +398,7 @@ export default class MapScreen extends React.Component {
             {coordinates3.length > 1 ? (
               <MapView.Polyline
                 coordinates={coordinates3}
-                strokeColor="red" // fallback for when `strokeColors` is not supported by the map-provider
+                strokeColor="red" 
                 strokeWidth={4}
               />
             ) : (
@@ -408,7 +408,7 @@ export default class MapScreen extends React.Component {
 {coordinates4.length > 1 ? (
               <MapView.Polyline
                 coordinates={coordinates4}
-                strokeColor="green" // fallback for when `strokeColors` is not supported by the map-provider
+                strokeColor="green" 
                 strokeWidth={2}
               />
             ) : (

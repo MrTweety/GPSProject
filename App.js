@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { StyleSheet, Text, View, Button, Image, Dimensions, ScrollView } from 'react-native';
-import { createSwitchNavigator,createStackNavigator, createBottomTabNavigator, createDrawerNavigator, createAppContainer,DrawerItems, SafeAreaView  } from 'react-navigation';
+import {DrawerActions , createSwitchNavigator,createStackNavigator, createBottomTabNavigator, createDrawerNavigator, createAppContainer,DrawerItems, SafeAreaView  } from 'react-navigation';
 import { createMaterialBottomTabNavigator } from "react-navigation-material-bottom-tabs";
 
 import { Ionicons, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -31,9 +31,11 @@ export default App;
 
 const CustomDrawerContentComponent  = (props) => (
   <SafeAreaView style = {{flex: 1}}>
-    <View style={{ height:160, paddingTop:10, backgroundColor: '#0055ff', justifyContent:'center', alignItems:'center' }}>
-      <Image
-          source={require('./assets/logo2_2.png')} style ={{marginTop:30, marginBottom:20, height: 120, borderRadius:30,backgroundColor:'white' }}
+    <View 
+    style={{ height:160, paddingTop:10, backgroundColor: '#0055ff', justifyContent:'center', alignItems:'center' }}>
+      <Image onPress={()=>this.props.navigation.navigate('DrawerClose')}
+          source={require('./assets/logo2_2.png')} 
+          style ={{marginTop:30, marginBottom:20, height: 120, borderRadius:30,backgroundColor:'white' }}
            />
     </View>
     <ScrollView>
@@ -138,6 +140,7 @@ const AppDrawerNavigator = createDrawerNavigator({
   drawerPosition: 'right', //Default is left
   contentComponent: CustomDrawerContentComponent,
   drawerWidth: width,
+  drawerLockMode:"locked-closed",
 });
 
 
