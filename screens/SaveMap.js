@@ -120,8 +120,57 @@ class MapScreen2 extends Component {
         longitude,
         latitudeDelta,
         longitudeDelta,
-      });
+      },1000);
      }
+
+     onPressZoomIn() {
+      this.region = {
+        latitude: this.state.exampleRegion.latitude,
+        longitude: this.state.exampleRegion.longitude,
+        latitudeDelta: this.state.exampleRegion.latitudeDelta * 2,
+        longitudeDelta: this.state.exampleRegion.latitudeDelta * ASPECT_RATIO  * 2
+      }
+  
+      this.setState({
+        exampleRegion: {
+          latitudeDelta: this.region.latitudeDelta,
+          longitudeDelta: this.region.longitudeDelta,
+          latitude: this.region.latitude,
+          longitude: this.region.longitude
+        }
+      })
+      this.map.animateToRegion(this.region, 100);
+    }
+  
+     onPressZoomOut() {
+      region = {
+        latitude: this.state.exampleRegion.latitude,
+        longitude: this.state.exampleRegion.longitude,
+        latitudeDelta: this.state.exampleRegion.latitudeDelta / 2,
+        longitudeDelta: this.state.exampleRegion.latitudeDelta * ASPECT_RATIO / 2
+      }
+  
+      this.setState({
+        exampleRegion: {
+          latitudeDelta: region.latitudeDelta,
+          longitudeDelta: region.longitudeDelta,
+          latitude: region.latitude,
+          longitude: region.longitude
+        }
+      })
+      this.map.animateToRegion(region, 100);
+    }
+
+    onRegionChange(region, lastLat, lastLong) {
+      this.setState({
+        exampleRegion: region,
+           lastLat: lastLat || this.state.lastLat,
+           lastLong: lastLong || this.state.lastLong
+      });
+  }
+
+
+
 
     render() {
 
@@ -178,12 +227,16 @@ class MapScreen2 extends Component {
             </View>
 
 
-            <View style={{ flex: 2, borderRadius:20, padding:20, margin:0}}>
+            <View style={{ flex: 2, padding:20, paddingBottom:0, margin:0}}>
+              <View style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', alignItems: 'center'}}>
             {!!exampleRegion && (
                 <MapView
-                style={{ flex: 1 }}
+                style={{ ...StyleSheet.absoluteFillObject}}
+                // region={exampleRegion}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
+                followUserLocation={true}
+                onRegionChange={this.onRegionChange.bind(this)}
                 initialRegion={exampleRegion}
                 provider="google"
                 ref={map => {
@@ -200,10 +253,19 @@ class MapScreen2 extends Component {
               false
             )}
                 
-
+            
             </MapView>
             )}
-        </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble, styles.button]} >
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble, styles.button]} >
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
+              </TouchableOpacity>
+            </View>
+            </View>
+          </View>
         </View>
       </View>
     );
@@ -219,6 +281,25 @@ const styles = StyleSheet.create({
       flex: 1,
       margin: 0,
       backgroundColor:'blue',
+    },
+    bubble: {
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+      borderRadius: 20,
+    },
+
+    button: {
+      width: 80,
+      paddingHorizontal: 12,
+      alignItems: 'center',
+      marginHorizontal: 10,
+    },
+
+    buttonContainer: {
+      flexDirection: 'row',
+      marginVertical: 20,
+      backgroundColor: 'transparent',
     },
   
     
