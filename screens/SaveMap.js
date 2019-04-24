@@ -2,10 +2,7 @@ import React, { Component, PropTypes} from 'react';
 import {Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView } from 'react-native';
 import {
     MapView,
-    Constants,
-    Permissions,
-    Location,
-    Marker,
+
   } from 'expo';
 
   import MyItem from '../Explore/MyItems'
@@ -155,9 +152,23 @@ class MapScreen2 extends Component {
 
                 {
                   coordinates.route.map((myRoute) =>{
+                    {/* const latitude = myRoute.coordinates[0].latitude;
+                    const longitude = myRoute.coordinates[0].longitude;
+                    const latitudeDelta = LATITUDE_DELTA;
+                    const longitudeDelta = LONGITUDE_DELTA; */}
+                    
                   return (
                   <MyItem imageUri = {require('../assets/logo1.png')}
-                        text = {'trasa '+(myRoute.id + 1)} myOnPress = { ()=>this.updateMap(myRoute.id)}  key = {myRoute.id}/>
+                        text = {'trasa '+(myRoute.id + 1)} myOnPress = { ()=>this.updateMap(myRoute.id)}  key = {myRoute.id}
+
+                        // myExampleRegion = {{
+                        //   latitude: latitude,
+                        //   longitude:longitude,
+                        //   latitudeDelta: latitudeDelta,
+                        //   longitudeDelta: longitudeDelta
+                        // }} 
+                        // myCoordinates = {myRoute.coordinates}
+                        />
                   ); 
 
                   })
