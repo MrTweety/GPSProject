@@ -227,11 +227,10 @@ class MapScreen2 extends Component {
             </View>
 
 
-            <View style={{ flex: 2, padding:20, paddingBottom:0, margin:0}}>
-              <View style={{ ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', alignItems: 'center'}}>
+            <View style={{ flex: 2, padding:20, paddingBottom:0, margin:0, justifyContent: 'center',}}>
             {!!exampleRegion && (
                 <MapView
-                style={{ ...StyleSheet.absoluteFillObject}}
+                style={{ flex: 1}}
                 // region={exampleRegion}
                 showsUserLocation={true}
                 showsMyLocationButton={true}
@@ -264,7 +263,6 @@ class MapScreen2 extends Component {
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
               </TouchableOpacity>
             </View>
-            </View>
           </View>
         </View>
       </View>
@@ -281,6 +279,7 @@ const styles = StyleSheet.create({
       flex: 1,
       margin: 0,
       backgroundColor:'blue',
+      
     },
     bubble: {
       backgroundColor: 'rgba(255,255,255,0.9)',
@@ -290,16 +289,24 @@ const styles = StyleSheet.create({
     },
 
     button: {
-      width: 80,
+      width: 60,
       paddingHorizontal: 12,
       alignItems: 'center',
-      marginHorizontal: 10,
+      marginTop: 10,
+      marginLeft: 10,
     },
 
     buttonContainer: {
-      flexDirection: 'row',
+      flexDirection: 'column',
       marginVertical: 20,
       backgroundColor: 'transparent',
+      flex: 1,
+      position: 'absolute',
+      bottom: 0,
+    // left: 0,
+    // right: 0,
+    // backgroundColor: 'white',
+    padding: 20,
     },
   
     
