@@ -444,6 +444,10 @@ export default class MapScreen extends React.Component {
 TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }) => {
   if (error) {
     // Error occurred - check `error.message` for more details.
+    Alert.alert(
+      error.message
+    );
+  
     return;
   }
   if (data) {

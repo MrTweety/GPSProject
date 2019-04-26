@@ -14,6 +14,7 @@ class LoadingScreen extends Component {
             if(user){
                 console.log('userelo 320');
                 this.props.navigation.navigate('Map2') ;
+                // console.log('user', user)
             }
             else{
                 this.props.navigation.navigate('LoginScreen');
