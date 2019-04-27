@@ -2,13 +2,16 @@ import React from 'react';
 import {
   Platform,
   StyleSheet,
+  Dimensions,
   Text,
   View,
   Animated,
   ScrollView,
   Alert,
+  AsyncStorage,
+  AppState,
 } from 'react-native';
-import {AsyncStorage} from 'react-native';
+import { Button } from 'react-native-elements';
 import {
   IntentLauncherAndroid,
   MapView,
@@ -18,15 +21,33 @@ import {
   Marker,
   TaskManager,
 } from 'expo';
-import { EventEmitter } from 'fbemitter';
+import { EventEmitter, EventSubscription } from 'fbemitter';
+import { NavigationEvents } from 'react-navigation';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+// import Icon from 'react-native-vector-icons/MaterialIcons';
+import MyButton from '../Explore/MyButton';
 
+const screen = Dimensions.get('window');
+const ASPECT_RATIO = screen.width / screen.height;
 
+const LATITUDE_DELTA = 0.004;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 // import geolocationService from './services/geolocationService';
-
+const STORAGE_KEY = 'background-location-storage';
 const LOCATION_TASK_NAME = 'background-location-task';
 const taskEventName = 'task-update';
-const eventEmitter = new EventEmitter();
+
+const locationEventsEmitter = new EventEmitter();
+
+const locationAccuracyStates = {
+  [Location.Accuracy.Lowest]: Location.Accuracy.Low,
+  [Location.Accuracy.Low]: Location.Accuracy.Balanced,
+  [Location.Accuracy.Balanced]: Location.Accuracy.High,
+  [Location.Accuracy.High]: Location.Accuracy.Highest,
+  [Location.Accuracy.Highest]: Location.Accuracy.BestForNavigation,
+  [Location.Accuracy.BestForNavigation]: Location.Accuracy.Lowest,
+};
 
 const exampleRegion = {
   latitude: 50.0713231,
@@ -35,113 +56,198 @@ const exampleRegion = {
   longitudeDelta: 0.0421,
 };
 
-const ADDRESS_HEIGHT = 200; // tutaj ustaw tyle żeby zmieściły się dane adresowe
-var abc;
-
 export default class MapScreen extends React.Component {
+  static navigationOptions = {
+    title: 'Background location',
+  };
+
+  mapViewRef = React.createRef();
+
   state = {
-    taskData: null,
-    isAddressVisible: false,
-    translateY: new Animated.Value(ADDRESS_HEIGHT),
-    coordinates2: [
-      { latitude: 50.0713231, longitude: 19.9404102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      // { latitude: 50.07205, longitude: 19.9429 },
-      // { latitude: 50.0729, longitude: 19.94308 },
-      // { latitude: 50.0532, longitude: 19.9619 },
-    ],
-
-    coordinates3: [
-      { latitude: 50.0813231, longitude: 19.9504102 },
-      { latitude: 50.0809, longitude: 19.9515 },
-      // { latitude: 50.07205, longitude: 19.9429 },
-      // { latitude: 50.0729, longitude: 19.94308 },
-      // { latitude: 50.0532, longitude: 19.9619 },
-    ],
-
-        coordinates4: [
-      { latitude: 50.0813231, longitude: 19.9504102 },
-      { latitude: 50.0909, longitude: 19.9615 },
-      // { latitude: 50.07205, longitude: 19.9429 },
-      // { latitude: 50.0729, longitude: 19.94308 },
-      // { latitude: 50.0532, longitude: 19.9619 },
-    ],
+    accuracy: Location.Accuracy.Highest,
+    isTracking: false,
+    showsBackgroundLocationIndicator: false,
+    savedLocations: [],
+    geofencingRegions: [],
   };
 
   componentDidMount() {
-    if (Platform.OS === 'android' && !Constants.isDevice) {
-      Alert.alert(
-        'Oops, this will not work on Sketch in an Android emulator. Try it on your device!'
-      );
-      this.getLocationAsync();
-      this.fetchLocation();
-      this.getLocationAsyncUpdate();
-      this.eventSubscription = eventEmitter.addListener(taskEventName, data => {
-        this.setState({ taskData: data });
-      });
-    } else {
-      this.getLocationAsync();
-      this.fetchLocation();
-      this.getLocationAsyncUpdate();
-      this.eventSubscription = eventEmitter.addListener(taskEventName, data => {
-        this.setState({ taskData: data });
-        console.log('data2:', data)
-        this.addLocationToArray4(data);
-
-        
-      });
-      
-    }
-  }
-  componentWillUnmount() {
-    this.eventSubscription.remove();
+    this.getLocationAsync();
   }
 
-
+  eventSubscription;
 
   getLocationAsync = async () => {
-    const { status } = await Permissions.askAsync(Permissions.LOCATION);
-    if (status !== 'granted') {
-      Alert.alert('Permission to access location was denied');
-      this.setState({
-        location: exampleRegion,
-      });
-    } else {
-      const { coords } = await Location.getCurrentPositionAsync({});
-      const latitude = coords.latitude;
-      const longitude = coords.longitude;
-      const latitudeDelta = 0.0922;
-      const longitudeDelta = 0.0421;
-      //console.log(coords);
+    const response = await Permissions.askAsync(Permissions.LOCATION).then(
+      r => r.status
+    );
 
+    if (response !== 'granted') {
+      AppState.addEventListener('change', this.handleAppStateChange);
       this.setState({
-        location: {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        },
-        mapTitle: null,
-        mapDescription: coords.latitude + ', ' + coords.longitude,
+        // tslint:disable-next-line max-line-length
+        error:
+          'Location permissions are required in order to use this feature. You can manually enable them at any time in the "Location Services" section of the Settings app.',
       });
-      this.map.animateToRegion({
-        latitude,
-        longitude,
-        latitudeDelta,
-        longitudeDelta,
+
+      // alert('error: Location permissions are required in order to use this feature. You can manually enable them at any time in the "Location Services" section of the Settings app.',
+      // );
+      return;
+    } else {
+      this.setState({ error: undefined });
+    }
+    var count = 0;
+    const getLoc = setInterval(async () => {
+      const locationStatus = await Location.getProviderStatusAsync({
+        accuracy: 5,
       });
+      if (Platform.OS !== 'android' || locationStatus.networkAvailable) {
+        clearInterval(getLoc);
+
+        const { coords } = await Location.getCurrentPositionAsync();
+        const isTracking = await Location.hasStartedLocationUpdatesAsync(
+          LOCATION_TASK_NAME
+        );
+        const task = (await TaskManager.getRegisteredTasksAsync()).find(
+          ({ taskName }) => taskName === LOCATION_TASK_NAME
+        );
+        const savedLocations = await getSavedLocations();
+        const accuracy = (task && task.options.accuracy) || this.state.accuracy;
+
+        this.eventSubscription = locationEventsEmitter.addListener(
+          taskEventName,
+          locations => {
+            this.setState({ savedLocations: locations });
+          }
+        );
+
+        if (!isTracking) {
+          alert('Click `Start tracking` to start getting location updates.');
+        }
+
+        this.setState({
+          accuracy,
+          isTracking,
+          showsBackgroundLocationIndicator:
+            task && task.options.showsBackgroundLocationIndicator,
+          savedLocations,
+          initialRegion: {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
+          },
+        });
+      } else {
+        ++count;
+        if (count > 3) {
+          clearInterval(getLoc);
+          Alert.alert(
+            'Location',
+            'Please set Location method to High Accuracy!',
+            [{ text: 'OK', onPress: () => this.openLocationMenu() }],
+            { cancelable: false }
+          );
+          this.setState({
+            error: 'Please set Location method to High Accuracy!',
+          });
+        } else {
+          this.openLocationMenu();
+          this.setState({
+            error: 'Please set Location method to High Accuracy!',
+          });
+        }
+      }
+    }, 1000);
+  };
+
+  handleAppStateChange = nextAppState => {
+    if (nextAppState !== 'active') {
+      return;
+    }
+
+    if (this.state.initialRegion) {
+      AppState.removeEventListener('change', this.handleAppStateChange);
+      return;
+    }
+
+    this.getLocationAsync();
+  };
+
+  componentWillUnmount() {
+    if (this.eventSubscription) {
+      this.eventSubscription.remove();
+    }
+    AppState.removeEventListener('change', this.handleAppStateChange);
+  }
+
+  async startLocationUpdates(accuracy = this.state.accuracy) {
+    await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+      accuracy,
+      showsBackgroundLocationIndicator: this.state
+        .showsBackgroundLocationIndicator,
+      deferredUpdatesInterval: 60 * 1000, // 1 minute
+      deferredUpdatesDistance: 100, // 100 meters
+      foregroundService: {
+        notificationTitle: 'expo-location-demo',
+        notificationBody: 'Background location is running...',
+        notificationColor: '#4630ec',
+      },
+    });
+    if (!this.state.isTracking) {
+      alert(
+        // tslint:disable-next-line max-line-length
+        'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
+      );
+    }
+    this.setState({ isTracking: true });
+  }
+
+  async stopLocationUpdates() {
+    await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+    this.setState({ isTracking: false });
+  }
+
+  clearLocations = async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    this.setState({ savedLocations: [] });
+  };
+
+  toggleTracking = async () => {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+
+    if (this.state.isTracking) {
+      await this.stopLocationUpdates();
+    } else {
+      await this.startLocationUpdates();
+    }
+    this.setState({ savedLocations: [] }); //TODO: wywalić?
+  };
+
+  onAccuracyChange = () => {
+    //TODO: czy na pewno potrzebne?
+    const accuracy = locationAccuracyStates[this.state.accuracy];
+
+    this.setState({ accuracy });
+
+    if (this.state.isTracking) {
+      // Restart background task with the new accuracy.
+      this.startLocationUpdates(accuracy);
     }
   };
 
+  toggleLocationIndicator = async () => {
+    const showsBackgroundLocationIndicator = !this.state
+      .showsBackgroundLocationIndicator;
 
-    getLocationAsyncUpdate = async () => {
-    const location = await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-      accuracy: Location.Accuracy.Highest,
-      
+    this.setState({ showsBackgroundLocationIndicator }, async () => {
+      if (this.state.isTracking) {
+        await this.startLocationUpdates();
+      }
     });
   };
 
-  async fetchLocation() {
+  onCenterMap = async () => {
     let response = await Permissions.askAsync(Permissions.LOCATION).then(
       r => r.status
     );
@@ -151,376 +257,238 @@ export default class MapScreen extends React.Component {
       });
       return;
     }
+
+    var count = 0;
+
     const getLoc = setInterval(async () => {
       const locationStatus = await Location.getProviderStatusAsync({
-        accuracy: 5,
+        accuracy: this.state.accuracy,
       });
       if (Platform.OS !== 'android' || locationStatus.networkAvailable) {
         clearInterval(getLoc);
-        this.setState({ errors: '' });
-        setInterval(async () => {
-          const location = await Location.getCurrentPositionAsync({});
-          if (location !== this.location) {
-            this.addLocationToArray(location.coords);
-
-            this.location = location;
-            this.setState({
-              locationGet: location,
-              location: {
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-              },
-            });
-          }
-        }, 500);
-        Location.watchPositionAsync(
-          {
-            accuracy: 5,
-            distanceInterval: 1,
-            enableHighAccuracy: true,
-          },
-          location => {
-            this.setState({ locationWatch: location });
-            this.addLocationToArrayWATCH(location.coords);
-          }
-        );
+        const { coords } = await Location.getCurrentPositionAsync();
+        const mapView = this.mapViewRef.current;
+        //TODO: obecna latitudeDelta i longitudeDelta
+        if (mapView) {
+          mapView.animateToRegion({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            latitudeDelta: LATITUDE_DELTA,
+            longitudeDelta: LONGITUDE_DELTA,
+          });
+        }
       } else {
-        this.setState({
-          errors: 'Please set Location method to High Accuracy!',
-        });
-        // Open location settings
-        if (Platform.OS === 'android')
-          IntentLauncherAndroid.startActivityAsync(
-            IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS
+        ++count;
+        if (count > 3) {
+          clearInterval(getLoc);
+          Alert.alert(
+            'Location',
+            'Please set Location method to High Accuracy!',
+            [{ text: 'OK', onPress: () => this.openLocationMenu() }],
+            { cancelable: false }
           );
+          this.setState({
+            error: 'Please set Location method to High Accuracy!',
+          });
+        } else {
+          this.openLocationMenu();
+          this.setState({
+            error: 'Please set Location method to High Accuracy!',
+          });
+        }
       }
     }, 1000);
-  }
-
-  addLocationToArray(location) {
-    
-    const { coordinates2 } = this.state;
-
-    var a = coordinates2.length;
-    //console.log(coordinates2[0].latitude)
-    if (
-      coordinates2[a - 1].latitude == location.latitude &&
-      coordinates2[a - 1].longitude == location.longitude
-    ) {
-      return;
-    }
-    // console.log('location:', location)
-    var joined = this.state.coordinates2.concat([
-      {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      },
-    ]);
-    this.setState({ coordinates2: joined });
-  }
-
-  addLocationToArrayWATCH(location) {
-    const { coordinates3 } = this.state;
-
-    var a = coordinates3.length;
-    //console.log(coordinates2[0].latitude)
-    if (
-      coordinates3[a - 1].latitude == location.latitude &&
-      coordinates3[a - 1].longitude == location.longitude
-    ) {
-      return;
-    }
-
-    var joined = this.state.coordinates3.concat([
-      {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      },
-    ]);
-    this.setState({ coordinates3: joined });
-  }
-
-    addLocationToArray4(location) {
-    const { coordinates4 } = this.state;
-
-    var a = coordinates4.length;
-   // console.log(coordinates4[0].latitude)
-    if (
-      coordinates4[a - 1].latitude == location.latitude &&
-      coordinates4[a - 1].longitude == location.longitude
-    ) {
-      return;
-    }
-
-    var joined = this.state.coordinates4.concat([
-      {
-        latitude: location.latitude,
-        longitude: location.longitude,
-      },
-    ]);
-    this.setState({ coordinates4: joined });
-  }
-
-  handleMapPress = e => {
-    const { coordinate } = e.nativeEvent;
-
-    this.setState({
-      location: coordinate,
-      info: null,
-      isAddressVisible: false,
-      mapDescription: coordinate.latitude + ', ' + coordinate.longitude,
-    });
   };
 
-  handleMarkerPress = async e => {
-    e.stopPropagation(); // to po to żeby nie wywołało się też this.handleMapPress
-    const { info, location, isAddressVisible, mapTitle } = this.state;
-
-    Animated.spring(this.state.translateY, {
-      toValue: isAddressVisible ? ADDRESS_HEIGHT : 0,
-      velocity: 3,
-    }).start();
-
-    if (!info && location) {
-    //   const response = await geolocationService.fetchInfo(location);
-      this.setState({
-        info: response,
-        mapTitle: response.address.city,
+  openLocationMenu = () => {
+    // Open location settings
+    if (Platform.OS === 'android')
+      IntentLauncherAndroid.startActivityAsync(
+        IntentLauncherAndroid.ACTION_LOCATION_SOURCE_SETTINGS
+      ).then(async () => {
+        const locationStatus = await Location.getProviderStatusAsync({
+          accuracy: this.state.accuracy,
+        });
+        if (Platform.OS !== 'android' || locationStatus.networkAvailable) {
+          this.setState({
+            error: '',
+          });
+        }
       });
-      //console.log(response);
-    }
-
-    this.setState({
-      isAddressVisible: !isAddressVisible,
-    });
-    this.marker.title = 'aaa';
   };
 
-  renderInfoEntry(key, value) {
-    return (
-      <View key={key} style={styles.addressItem}>
-        <Text style={styles.addressItemName}>{key}</Text>
-        <Text>{value}</Text>
-      </View>
-    );
-  }
+  renderPolyline() {
+    const { savedLocations } = this.state;
 
-  renderInfo() {
-    const { info, translateY } = this.state;
-    if (!info) {
+    if (savedLocations.length === 0) {
       return null;
     }
-
-    const { name, address, category, type } = info;
     return (
-      <ScrollView>
-        <Text style={styles.header}>{name}</Text>
-        {Object.entries(address).map(([key, value]) =>
-          this.renderInfoEntry(key, value)
-        )}
-        {this.renderInfoEntry('Category', category)}
-        {this.renderInfoEntry('Type', type)}
-      </ScrollView>
+      // @ts-ignore
+      <MapView.Polyline
+        coordinates={savedLocations}
+        strokeWidth={3}
+        strokeColor={'#4630ec'}
+      />
     );
-  }
-
-  stringifyLocation(location) {
-    if (location)
-      return location.coords.latitude + ' ' + location.coords.longitude;
   }
 
   render() {
-    const {
-      location,
-      info,
-      translateY,
-      mapTitle,
-      mapDescription,
-      coordinates2,
-      coordinates3,
-      coordinates4,
-      locationWatch,
-      taskData,
-      
-    } = this.state;
-    const coordinates = JSON.stringify(locationWatch);
-    console.log('locationWatch:', locationWatch)
-    console.log('taskData:', taskData)
+    // if (this.state.error) {
+    //   return <Text style={styles.errorText}>{this.state.error}</Text>;
+    // }
 
-    // console.log(location);
-    _onMapReady=() =>{
-        PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION)
-          .then(granted => {
-            this.setState({ paddingTop: 0 });
-          });
-      }
+    // if (!this.state.initialRegion) {
+    //   return <NavigationEvents onWillFocus ={this.getLocationAsync} />;
+    // }
 
     return (
       <View style={styles.container}>
-        {!!location && (
-            <MapView
+        {this.state.error ? (
+          <Text style={styles.errorText}>{this.state.error}</Text>
+        ) : null}
+
+        {!!exampleRegion && (
+          <MapView
             style={{ flex: 1 }}
             showsUserLocation={true}
             showsMyLocationButton={true}
-            onMapReady={this._onMapReady}
-            ref={map => {
-              this.map = map;
-            }}
-            onPress={this.handleMapPress}
-            initialRegion={location}
-            provider="google"
-            >
-            
-            <MapView.Marker
-              coordinate={location}
-              title={this.state.info ? mapTitle : null}
-              description={mapDescription}
-              onPress={this.handleMarkerPress}
-              draggable={true}
-              onDragStart={this.handleMapPress}
-              onDrag={this.handleMapPress}
-              onDragEnd={this.handleMapPress}
-              ref={marker => (this.marker = marker)}
-            />
-            {coordinates2.length > 1 ? (
-              <MapView.Polyline
-                coordinates={coordinates2}
-                strokeColor="#63A0FF" 
-
-                strokeWidth={8}
-              />
-            ) : (
-              false
-            )}
-
-            {coordinates3.length > 1 ? (
-              <MapView.Polyline
-                coordinates={coordinates3}
-                strokeColor="red" 
-                strokeWidth={4}
-              />
-            ) : (
-              false
-            )}
-
-{coordinates4.length > 1 ? (
-              <MapView.Polyline
-                coordinates={coordinates4}
-                strokeColor="green" 
-                strokeWidth={2}
-              />
-            ) : (
-              false
-            )}
+            ref={this.mapViewRef}
+            initialRegion={this.state.initialRegion}
+            provider="google">
+            {this.renderPolyline()}
           </MapView>
         )}
 
-        <Text style={styles.cord}>
-          {coordinates3 == 'b' ?  JSON.stringify(coordinates4) : false}
-        </Text>
+        <View style={styles.buttons} pointerEvents="box-none">
+          <View style={styles.topButtons}>
+            <View style={styles.buttonsColumn}>
+              {Platform.OS === 'android' ? null : (
+                <MyButton
+                  style={styles.button}
+                  onPress={this.toggleLocationIndicator}>
+                  <Text>
+                    {this.state.showsBackgroundLocationIndicator
+                      ? 'Hide'
+                      : 'Show'}
+                  </Text>
+                  <Text> background </Text>
+                  <FontAwesome name="location-arrow" size={20} color="white" />
+                  <Text> indicator</Text>
+                </MyButton>
+              )}
+              <Button
+                title={`Accuracy: ${Location.Accuracy[this.state.accuracy].toString()}`}
+                style={styles.button}
+                onPress={this.onAccuracyChange}
+              />
+            </View>
+            <View style={styles.buttonsColumn}>
+              <Button
+                style={styles.button}
+                onPress={this.onCenterMap}
+                icon={{ name: 'my-location', size: 18, color: 'white' }}
+                iconLeft
+              />
+            </View>
+          </View>
 
-        <Text style={styles.cordd}>
-          Location-Watch: {this.stringifyLocation(this.state.locationWatch)}
-          {'\n'}
-          Location-get: {this.stringifyLocation(this.state.locationGet)}
-          {'\n'}
-          
-        </Text>
-
-        {!!info && (
-          <Animated.View
-            style={[styles.address, { transform: [{ translateY }] }]}>
-            <Text style={styles.text}>{info.display_name}</Text>
-            {this.renderInfo()}
-          </Animated.View>
-        )}
+          <View style={styles.bottomButtons}>
+            <Button
+              title="Clear Locations"
+              style={styles.button}
+              onPress={this.clearLocations}
+            />
+            <Button
+              title={(this.state.isTracking
+                ? 'Stop tracking'
+                : 'Start tracking'
+              ).toString()}
+              style={styles.button}
+              onPress={this.toggleTracking}
+            />
+          </View>
+        </View>
       </View>
     );
   }
 }
 
-TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }) => {
-  if (error) {
-    // Error occurred - check `error.message` for more details.
-    Alert.alert(
-      error.message
-    );
-  
-    return;
+async function getSavedLocations() {
+  try {
+    const item = await AsyncStorage.getItem(STORAGE_KEY);
+    return item ? JSON.parse(item) : [];
+  } catch (e) {
+    return [];
   }
-  if (data) {
-    const { locations } = data;
-    const {coords} = locations[0];
-    
-    
-    // console.log('locations1:', data)
-    eventEmitter.emit(taskEventName, coords);
-    // console.log('locations2:', locations[0].coords)
-    // console.log('coords:', coords)
+}
 
+TaskManager.defineTask(
+  LOCATION_TASK_NAME,
+  async ({ data: { locations }, error }) => {
+    if (error) {
+      // Error occurred - check `error.message` for more details.
+      Alert.alert(error.message);
+      return;
+    }
+    if (locations && locations.length > 0) {
+      const savedLocations = await getSavedLocations();
+      const newLocations = locations.map(({ coords }) => ({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      }));
+
+      console.log(`Received new locations at ${new Date()}:`, locations);
+      savedLocations.push(...newLocations);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));
+      locationEventsEmitter.emit(taskEventName, savedLocations);
+
+      // const { locations } = data;
+      // const {coords} = locations[0];
+
+      // console.log('locations1:', data)
+      // locationEventEmitter.emit(taskEventName, coords);
+      // console.log('locations2:', locations[0].coords)
+      // console.log('coords:', coords)
+    }
   }
-});
-
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
-  address: {
+  buttons: {
     flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    padding: 10,
     position: 'absolute',
-    height: ADDRESS_HEIGHT,
+    top: 0,
+    right: 0,
     bottom: 0,
     left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    padding: 20,
   },
-
-  text: {
-    flex: 1,
-    color: 'blue',
-  },
-  cord: {
-    flex: 1,
-    left: 0,
-    right: 0,
-    position: 'absolute',
-    top: 20,
-    padding: 20,
-    color: 'blue',
-    backgroundColor: 'white',
-    fontSize: 10,
-  },
-
-  cordd: {
-    flex: 1,
-    left: 0,
-    right: 0,
-    position: 'absolute',
-    top: 80,
-    padding: 20,
-    color: 'red',
-    backgroundColor: 'yellow',
-    fontSize: 10,
-  },
-
-  header: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  addressItem: {
-    paddingVertical: 8,
-    display: 'flex',
+  topButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderBottomWidth: 2,
-    borderBottomColor: '#eee',
   },
-  addressItemName: {
-    fontWeight: 'bold',
+  bottomButtons: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  buttonsColumn: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  button: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginVertical: 5,
+  },
+  errorText: {
+    fontSize: 15,
+    color: 'rgba(0,0,0,0.7)',
+    margin: 20,
   },
 });
