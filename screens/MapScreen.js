@@ -24,8 +24,6 @@ import {
 import { EventEmitter, EventSubscription } from 'fbemitter';
 import { NavigationEvents } from 'react-navigation';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
-// import Icon from 'react-native-vector-icons/MaterialIcons';
-import MyButton from '../Explore/MyButton';
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
@@ -323,6 +321,7 @@ export default class MapScreen extends React.Component {
     if (savedLocations.length === 0) {
       return null;
     }
+    this.onCenterMap();
     return (
       // @ts-ignore
       <MapView.Polyline
@@ -334,13 +333,7 @@ export default class MapScreen extends React.Component {
   }
 
   render() {
-    // if (this.state.error) {
-    //   return <Text style={styles.errorText}>{this.state.error}</Text>;
-    // }
 
-    // if (!this.state.initialRegion) {
-    //   return <NavigationEvents onWillFocus ={this.getLocationAsync} />;
-    // }
 
     return (
       <View style={styles.container}>
@@ -364,18 +357,19 @@ export default class MapScreen extends React.Component {
           <View style={styles.topButtons}>
             <View style={styles.buttonsColumn}>
               {Platform.OS === 'android' ? null : (
-                <MyButton
-                  style={styles.button}
-                  onPress={this.toggleLocationIndicator}>
-                  <Text>
-                    {this.state.showsBackgroundLocationIndicator
+
+                <Button
+                style={styles.button}
+                onPress={this.onCenterMap}
+                icon={{ name: 'location-arrow',type: 'font-awesome', size: 18, color: 'white' }}
+                iconLeft
+                title={(!this.state.showsBackgroundLocationIndicator
                       ? 'Hide'
-                      : 'Show'}
-                  </Text>
-                  <Text> background </Text>
-                  <FontAwesome name="location-arrow" size={20} color="white" />
-                  <Text> indicator</Text>
-                </MyButton>
+                      : 'Show') + ' background indicator'}
+              />
+
+  
+
               )}
               <Button
                 title={`Accuracy: ${Location.Accuracy[this.state.accuracy].toString()}`}
@@ -443,13 +437,6 @@ TaskManager.defineTask(
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));
       locationEventsEmitter.emit(taskEventName, savedLocations);
 
-      // const { locations } = data;
-      // const {coords} = locations[0];
-
-      // console.log('locations1:', data)
-      // locationEventEmitter.emit(taskEventName, coords);
-      // console.log('locations2:', locations[0].coords)
-      // console.log('coords:', coords)
     }
   }
 );
