@@ -137,7 +137,7 @@ export default class MapScreen extends React.Component {
         );
 
         if (!isTracking) {
-          alert('Click `Start tracking` to start getting location updates.');
+          // alert('Click `Start tracking` to start getting location updates.');
         }
 
         this.setState({
@@ -209,12 +209,12 @@ export default class MapScreen extends React.Component {
         notificationColor: '#4630ec',
       },
     });
-    if (!this.state.isTracking) {
-      alert(
-        // tslint:disable-next-line max-line-length
-        'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
-      );
-    }
+    // if (!this.state.isTracking) {
+    //   alert(
+    //     // tslint:disable-next-line max-line-length
+    //     'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
+    //   );
+    // }
     this.setState({ isTracking: true });
     this.startTimer();
   }
@@ -446,7 +446,9 @@ stopTimer = () =>{
               titleStyle ={{color: COLOR_BUTTON_TEXT}}
               onPress={this.clearLocations}
             /> */}
-
+            {this.state.isTracking || 1
+            ?
+            <View style={{flexDirection: 'row'}}>
             <View style={{backgroundColor:'grey', width:screen.width-140, height:50, borderRadius:50, 
                 flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 20}}>
               <View >
@@ -460,14 +462,14 @@ stopTimer = () =>{
               
             </View>
 
-            {this.state.isTracking || 1 
-            ? <Button
+            <Button
               buttonStyle={[ styles.circleButton]}
               onPress={this.onCenterMap}
               icon={{name: 'controller-paus', type: 'entypo', size: 25, color: 'grey'}}
               iconLeft
               onPress={null}
             />
+            </View>
             : null
             }
             <Button
