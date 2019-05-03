@@ -256,11 +256,11 @@ class MapScreen2 extends Component {
             </MapView>
             )}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble, styles.button]} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble, styles.button]} >
+              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble]} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble]} >
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -283,18 +283,17 @@ const styles = StyleSheet.create({
     },
     bubble: {
       backgroundColor: 'rgba(255,255,255,0.9)',
-      paddingHorizontal: 18,
-      paddingVertical: 12,
-      borderRadius: 20,
-    },
-
-    button: {
-      width: 60,
-      paddingHorizontal: 12,
-      alignItems: 'center',
+      width:50,
+      height:50,
+      borderRadius: 30,
       marginTop: 10,
       marginLeft: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize:25,
     },
+
+
 
     buttonContainer: {
       flexDirection: 'column',

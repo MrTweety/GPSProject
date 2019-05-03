@@ -10,6 +10,7 @@ import {
   Alert,
   AsyncStorage,
   AppState,
+  PixelRatio
 } from 'react-native';
 import { Button } from 'react-native-elements';
 import {
@@ -23,13 +24,17 @@ import {
 } from 'expo';
 import { EventEmitter, EventSubscription } from 'fbemitter';
 import { NavigationEvents } from 'react-navigation';
-import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome, MaterialIcons,Entypo } from '@expo/vector-icons';
+import moment from "moment";
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
+const mapPaddingBottom = screen.height * 0.55;
+const mapPaddingTop = screen.height * 0.1;
 
 const LATITUDE_DELTA = 0.004;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 
 // import geolocationService from './services/geolocationService';
 const STORAGE_KEY = 'background-location-storage';
@@ -54,6 +59,16 @@ const exampleRegion = {
   longitudeDelta: 0.0421,
 };
 
+function Timer(props){
+  const duration = moment.duration(props.interval);
+  return (
+    <Text style={props.myStyleText}>
+      {duration.hours() > 9 ? duration.hours() : '0' + duration.hours()}:
+      {duration.minutes() > 9 ? duration.minutes() : '0' + duration.minutes()}:
+      {duration.seconds() > 9 ? duration.seconds() : '0' + duration.seconds()}
+    </Text>
+  );}
+
 export default class MapScreen extends React.Component {
   static navigationOptions = {
     title: 'Background location',
@@ -67,6 +82,8 @@ export default class MapScreen extends React.Component {
     showsBackgroundLocationIndicator: false,
     savedLocations: [],
     geofencingRegions: [],
+    timerStart: 0,
+    timerNow: 0,
   };
 
   componentDidMount() {
@@ -199,11 +216,13 @@ export default class MapScreen extends React.Component {
       );
     }
     this.setState({ isTracking: true });
+    this.startTimer();
   }
 
   async stopLocationUpdates() {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     this.setState({ isTracking: false });
+    this.stopTimer();
   }
 
   clearLocations = async () => {
@@ -332,9 +351,35 @@ export default class MapScreen extends React.Component {
     );
   }
 
+  setMapPadding = () => {
+    const iosEdgePadding = { top: mapPaddingTop * 0.5, right: 0, bottom: mapPaddingBottom * 0.95, left: 0 };
+    const androidEdgePadding = { top: PixelRatio.getPixelSizeForLayoutSize(screen.height * 0), right: 0, bottom: PixelRatio.getPixelSizeForLayoutSize(screen.height * 0.17), left: 0 };
+    const edgePadding = (Platform.OS === 'android') ? androidEdgePadding : iosEdgePadding;
+    return edgePadding;
+}
+
+startTimer = () =>{
+  const timerNow = new Date().getTime();
+  this.setState({
+    timerStart: timerNow,
+    timerNow: timerNow,
+  });
+  this.timer = setInterval(()=> {
+    // if(this.state.isTracking)
+      this.setState({ timerNow: new Date().getTime() })
+  },1000)
+}
+stopTimer = () =>{
+  // this.setState({
+  //   timerStart: 0,
+  //   timerNow: 0,
+  // });
+  clearInterval(this.timer);
+}
+
   render() {
 
-
+    const timer = this.state.timerNow - this.state.timerStart;
     return (
       <View style={styles.container}>
         {this.state.error ? (
@@ -344,11 +389,15 @@ export default class MapScreen extends React.Component {
         {!!exampleRegion && (
           <MapView
             style={{ flex: 1 }}
+            // mapPadding={this.setMapPadding()} //Goolge label 
+            legalLabelInsets={{bottom:200}}
             showsUserLocation={true}
             showsMyLocationButton={true}
             ref={this.mapViewRef}
             initialRegion={this.state.initialRegion}
-            provider="google">
+            provider="google"
+            >
+
             {this.renderPolyline()}
           </MapView>
         )}
@@ -359,9 +408,10 @@ export default class MapScreen extends React.Component {
               {Platform.OS === 'android' ? null : (
 
                 <Button
-                style={styles.button}
+                buttonStyle={[styles.bubble, styles.button]}
+                titleStyle ={{color: COLOR_BUTTON_TEXT}}
                 onPress={this.onCenterMap}
-                icon={{ name: 'location-arrow',type: 'font-awesome', size: 18, color: 'white' }}
+                icon={{ name: 'location-arrow',type: 'font-awesome', size: 18, color: COLOR_BUTTON_TEXT }}
                 iconLeft
                 title={(!this.state.showsBackgroundLocationIndicator
                       ? 'Hide'
@@ -373,37 +423,68 @@ export default class MapScreen extends React.Component {
               )}
               <Button
                 title={`Accuracy: ${Location.Accuracy[this.state.accuracy].toString()}`}
-                style={styles.button}
+                style={styles.bubble}
                 onPress={this.onAccuracyChange}
               />
             </View>
-            <View style={styles.buttonsColumn}>
+          </View>
+          <View style={styles.buttonsColumn}>
+            <View style={styles.bottomButtons}>
               <Button
-                style={styles.button}
+              buttonStyle={[ styles.circleButton]}
                 onPress={this.onCenterMap}
-                icon={{ name: 'my-location', size: 18, color: 'white' }}
+                icon={{ name: 'my-location', size: 25, color: COLOR_BUTTON_TEXT }}
                 iconLeft
               />
             </View>
-          </View>
+          
 
           <View style={styles.bottomButtons}>
-            <Button
+            {/* <Button
               title="Clear Locations"
-              style={styles.button}
+              buttonStyle={[styles.bubble]}
+              titleStyle ={{color: COLOR_BUTTON_TEXT}}
               onPress={this.clearLocations}
+            /> */}
+
+            <View style={{backgroundColor:'grey', width:screen.width-140, height:50, borderRadius:50, 
+                flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 20}}>
+              <View >
+                <Timer interval = {timer} myStyleText={{color:'white', fontSize:18, textAlign:'center'}} />  
+                <Text style={{ fontSize:14, textAlign:'center'}}>duration</Text>
+              </View>
+              <View>
+                <Text style={{ color:'white', fontSize:18, textAlign:'center'}}>24.33 km</Text>
+                <Text style={{ fontSize:14, textAlign:'center'}}>distance</Text>
+              </View>
+              
+            </View>
+
+            {this.state.isTracking || 1 
+            ? <Button
+              buttonStyle={[ styles.circleButton]}
+              onPress={this.onCenterMap}
+              icon={{name: 'controller-paus', type: 'entypo', size: 25, color: 'grey'}}
+              iconLeft
+              onPress={null}
             />
+            : null
+            }
             <Button
-              title={(this.state.isTracking
-                ? 'Stop tracking'
-                : 'Start tracking'
-              ).toString()}
-              style={styles.button}
+              buttonStyle={[ styles.circleButton]}
+              onPress={this.onCenterMap}
+              icon={(!this.state.isTracking
+                ? { name: 'controller-play', type: 'entypo', size: 25, color: 'green'}
+                :{ name: 'controller-stop', type: 'entypo', size: 25, color: 'red'})}
+              iconLeft
               onPress={this.toggleTracking}
             />
+
           </View>
         </View>
       </View>
+      <View style={styles.mapDrawerOverlay} />
+    </View>
     );
   }
 }
@@ -416,6 +497,9 @@ async function getSavedLocations() {
     return [];
   }
 }
+
+
+
 
 TaskManager.defineTask(
   LOCATION_TASK_NAME,
@@ -461,21 +545,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bottomButtons: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    marginBottom:10,
   },
   buttonsColumn: {
     flexDirection: 'column',
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
+    marginBottom:10,
+    
   },
-  button: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginVertical: 5,
-  },
+
   errorText: {
     fontSize: 15,
     color: 'rgba(0,0,0,0.7)',
     margin: 20,
+  },
+
+  mapDrawerOverlay: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    opacity: 0.0,
+    height: Dimensions.get('window').height,
+    width: 20,
+  },
+
+  circleButton: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    width:50,
+    height:50,
+    borderRadius: 50,
+    marginLeft:10,
+    padding: 0,
+ 
   },
 });
