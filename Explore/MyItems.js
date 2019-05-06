@@ -6,10 +6,11 @@ import {
   } from 'expo';
 
 class MyItems extends Component {
+
     render() {
 
         return (
-            <TouchableOpacity onPress= {this.props.myOnPress}  >
+            <TouchableOpacity onPress= {this.props.myOnPress}  onLongPress={this.props.onLongPressButton}>
                 <View key = {this.props.mykey} style = {{height:130, width:130, marginLeft:20, borderWidth:0.5,borderColor:'#dddddd'}}>
                     <View style = {{flex:2}}>
                         <Image source={this.props.imageUri}

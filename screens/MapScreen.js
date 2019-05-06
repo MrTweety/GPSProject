@@ -37,7 +37,12 @@ const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 
 // import geolocationService from './services/geolocationService';
-const STORAGE_KEY = 'background-location-storage';
+// const STORAGE_KEY = 'background-location-storage';
+// const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
+
+import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY  } from '../Explore/MyStorage.js'
+
+
 const LOCATION_TASK_NAME = 'background-location-task';
 const taskEventName = 'task-update';
 
@@ -79,11 +84,16 @@ export default class MapScreen extends React.Component {
   state = {
     accuracy: Location.Accuracy.Highest,
     isTracking: false,
+    isPause: false,
     showsBackgroundLocationIndicator: false,
     savedLocations: [],
     geofencingRegions: [],
     timerStart: 0,
     timerNow: 0,
+    timerDuration: 0,
+    timerDurationNew: 0,
+    translateX: new Animated.Value(screen.width-140),
+    fadeAnim: new Animated.Value(0),
   };
 
   componentDidMount() {
@@ -126,7 +136,7 @@ export default class MapScreen extends React.Component {
         const task = (await TaskManager.getRegisteredTasksAsync()).find(
           ({ taskName }) => taskName === LOCATION_TASK_NAME
         );
-        const savedLocations = await getSavedLocations();
+        const savedLocations = await getSavedLocations(STORAGE_KEY);
         const accuracy = (task && task.options.accuracy) || this.state.accuracy;
 
         this.eventSubscription = locationEventsEmitter.addListener(
@@ -199,14 +209,13 @@ export default class MapScreen extends React.Component {
   async startLocationUpdates(accuracy = this.state.accuracy) {
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy,
-      showsBackgroundLocationIndicator: this.state
-        .showsBackgroundLocationIndicator,
-      deferredUpdatesInterval: 60 * 1000, // 1 minute
-      deferredUpdatesDistance: 100, // 100 meters
+      showsBackgroundLocationIndicator: this.state.showsBackgroundLocationIndicator,
+      deferredUpdatesInterval: 30 * 1000, // 30sec
+      deferredUpdatesDistance: 10, // 10 meters
       foregroundService: {
         notificationTitle: 'expo-location-demo',
         notificationBody: 'Background location is running...',
-        notificationColor: '#4630ec',
+        notificationColor: '#463',
       },
     });
     // if (!this.state.isTracking) {
@@ -215,15 +224,38 @@ export default class MapScreen extends React.Component {
     //     'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
     //   );
     // }
-    this.setState({ isTracking: true });
+    // this.setState({ isTracking: true });
     this.startTimer();
   }
 
   async stopLocationUpdates() {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    this.setState({ isTracking: false });
+    // this.setState({ isTracking: false });
     this.stopTimer();
   }
+
+  async stopLocationSave() {
+    // await AsyncStorage.removeItem(STORAGE_KEY_USER_ROUTERS);
+
+    if(this.state.savedLocations && this.state.savedLocations.length>1){
+
+    const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    console.log('savedRouters:', savedRouters)
+
+    savedRouters.push(...[
+      {
+        coordinates: this.state.savedLocations,
+        timeStart:this.state.timerStart , 
+        timeEnd: new Date().getTime()
+      }]);
+    console.log('savedRouters:', savedRouters)
+    // console.log('savedLocations:', this.state.savedLocations)
+    await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
+  }
+  }
+
+
+
 
   clearLocations = async () => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
@@ -231,14 +263,54 @@ export default class MapScreen extends React.Component {
   };
 
   toggleTracking = async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+
 
     if (this.state.isTracking) {
       await this.stopLocationUpdates();
+      this.setState({ isTracking: false });
+      this.stopLocationSave();
+      await AsyncStorage.removeItem(STORAGE_KEY);
+
     } else {
       await this.startLocationUpdates();
+      this.setState({ isTracking: true });
     }
-    this.setState({ savedLocations: [] }); //TODO: wywalić?
+
+
+    this.animatedToggleTracking();
+    this.setState({ savedLocations: [], //TODO: czy na pewno czycić tu? 
+      timerDuration: 0 }); 
+  };
+
+
+
+
+  animatedToggleTracking = () => {
+    Animated.spring(this.state.translateX, {
+      toValue: !this.state.isTracking ? screen.width-140 : 0,
+      velocity: 3,
+    }).start();
+    Animated.spring(this.state.fadeAnim, {
+      toValue: !this.state.isTracking ? 0 : 1,
+      velocity: 3,
+    }).start(); 
+  }
+
+  togglePause = async () => {
+
+    if (!this.state.isPause) {  
+      await this.stopLocationUpdates();
+      const timerDuration = this.state.timerDurationNew;
+      const timerDurationNew = this.state.timerNow - this.state.timerStart + this.state.timerDurationNew;
+      this.setState({ isPause: true,
+        timerDuration: timerDuration,
+        timerDurationNew: timerDurationNew,
+      });
+      
+    } else {
+      await this.startLocationUpdates();
+      this.setState({ isPause: false });
+    }
   };
 
   onAccuracyChange = () => {
@@ -378,8 +450,15 @@ stopTimer = () =>{
 }
 
   render() {
+    var timer = 0;
+    this.state.isPause 
+    ? timer = this.state.timerNow - this.state.timerStart + this.state.timerDuration
+    : timer = this.state.timerNow - this.state.timerStart + this.state.timerDurationNew
 
-    const timer = this.state.timerNow - this.state.timerStart;
+    this.state.isTracking ? this.animatedToggleTracking() : null;
+    // this.animatedToggleTracking() ;
+
+    const translateX = this.state.translateX;
     return (
       <View style={styles.container}>
         {this.state.error ? (
@@ -393,6 +472,7 @@ stopTimer = () =>{
             legalLabelInsets={{bottom:200}}
             showsUserLocation={true}
             showsMyLocationButton={true}
+            showsScale={true}
             ref={this.mapViewRef}
             initialRegion={this.state.initialRegion}
             provider="google"
@@ -448,8 +528,8 @@ stopTimer = () =>{
             /> */}
             {this.state.isTracking || 1
             ?
-            <View style={{flexDirection: 'row'}}>
-            <View style={{backgroundColor:'grey', width:screen.width-140, height:50, borderRadius:50, 
+            <Animated.View style={{flexDirection: 'row',opacity: this.state.fadeAnim, transform: [{translateX}]}}>
+            <View style={{backgroundColor:COLOR_BUTTON_TEXT, width:screen.width-140, height:50, borderRadius:50, 
                 flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 20}}>
               <View >
                 <Timer interval = {timer} myStyleText={{color:'white', fontSize:18, textAlign:'center'}} />  
@@ -465,11 +545,13 @@ stopTimer = () =>{
             <Button
               buttonStyle={[ styles.circleButton]}
               onPress={this.onCenterMap}
-              icon={{name: 'controller-paus', type: 'entypo', size: 25, color: 'grey'}}
+              icon={(!this.state.isPause
+              ? {name: 'controller-paus', type: 'entypo', size: 25, color: COLOR_BUTTON_TEXT}
+              : {name: 'controller-play', type: 'entypo', size: 25, color: COLOR_BUTTON_TEXT})}
               iconLeft
-              onPress={null}
+              onPress={this.togglePause}
             />
-            </View>
+            </Animated.View>
             : null
             }
             <Button
@@ -491,14 +573,7 @@ stopTimer = () =>{
   }
 }
 
-async function getSavedLocations() {
-  try {
-    const item = await AsyncStorage.getItem(STORAGE_KEY);
-    return item ? JSON.parse(item) : [];
-  } catch (e) {
-    return [];
-  }
-}
+
 
 
 
@@ -512,7 +587,7 @@ TaskManager.defineTask(
       return;
     }
     if (locations && locations.length > 0) {
-      const savedLocations = await getSavedLocations();
+      const savedLocations = await getSavedLocations(STORAGE_KEY);
       const newLocations = locations.map(({ coords }) => ({
         latitude: coords.latitude,
         longitude: coords.longitude,
@@ -526,6 +601,7 @@ TaskManager.defineTask(
     }
   }
 );
+
 
 const styles = StyleSheet.create({
   container: {
