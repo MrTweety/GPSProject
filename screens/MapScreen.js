@@ -10,7 +10,8 @@ import {
   Alert,
   AsyncStorage,
   AppState,
-  PixelRatio
+  PixelRatio,
+
 } from 'react-native';
 import { Button } from 'react-native-elements';
 import {
@@ -21,6 +22,7 @@ import {
   Location,
   Marker,
   TaskManager,
+  KeepAwake
 } from 'expo';
 import { EventEmitter, EventSubscription } from 'fbemitter';
 import { NavigationEvents } from 'react-navigation';
@@ -40,7 +42,7 @@ const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 // const STORAGE_KEY = 'background-location-storage';
 // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
 
-import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY  } from '../Explore/MyStorage.js'
+import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY } from '../Explore/MyStorage.js'
 
 
 const LOCATION_TASK_NAME = 'background-location-task';
@@ -96,8 +98,18 @@ export default class MapScreen extends React.Component {
     fadeAnim: new Animated.Value(0),
   };
 
+  keepAwakeActivate = () => {
+    KeepAwake.activate();
+  }
+
+  keepAwakeDeactivate = () => {
+    // KeepAwake.deactivate();//TODO:odkomentowac to w finalnej wersji :D 
+  }
+  
   componentDidMount() {
     this.getLocationAsync();
+    this.keepAwakeActivate();//TODO: wywalić w finalnej wersji :D
+    this.keepAwakeDeactivate();
   }
 
   eventSubscription;
@@ -207,6 +219,7 @@ export default class MapScreen extends React.Component {
   }
 
   async startLocationUpdates(accuracy = this.state.accuracy) {
+    this.keepAwakeActivate();
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy,
       showsBackgroundLocationIndicator: this.state.showsBackgroundLocationIndicator,
@@ -217,6 +230,7 @@ export default class MapScreen extends React.Component {
         notificationBody: 'Background location is running...',
         notificationColor: '#463',
       },
+      foregroundService:{}
     });
     // if (!this.state.isTracking) {
     //   alert(
@@ -229,6 +243,7 @@ export default class MapScreen extends React.Component {
   }
 
   async stopLocationUpdates() {
+    this.keepAwakeDeactivate();
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     // this.setState({ isTracking: false });
     this.stopTimer();
@@ -464,7 +479,7 @@ stopTimer = () =>{
         {this.state.error ? (
           <Text style={styles.errorText}>{this.state.error}</Text>
         ) : null}
-
+        
         {!!exampleRegion && (
           <MapView
             style={{ flex: 1 }}
