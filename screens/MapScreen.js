@@ -42,13 +42,16 @@ const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 // const STORAGE_KEY = 'background-location-storage';
 // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
 
-import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY } from '../Explore/MyStorage.js'
+import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY, STORAGE_KEY_USER_DISTANCE } from '../Explore/MyStorage.js'
+import haversine from '../Explore/MyHaversine'
+
 
 
 const LOCATION_TASK_NAME = 'background-location-task';
 const taskEventName = 'task-update';
 
 const locationEventsEmitter = new EventEmitter();
+const distanceEventsEmitter = new EventEmitter();
 
 const locationAccuracyStates = {
   [Location.Accuracy.Lowest]: Location.Accuracy.Low,
@@ -76,11 +79,18 @@ function Timer(props){
     </Text>
   );}
 
+  Number.prototype.round = function(place) {
+    return +(Math.round(this+"e+" + place)+ "e-" + place);
+}
+
+
+
 export default class MapScreen extends React.Component {
   static navigationOptions = {
     title: 'Background location',
   };
 
+  
   mapViewRef = React.createRef();
 
   state = {
@@ -94,6 +104,7 @@ export default class MapScreen extends React.Component {
     timerNow: 0,
     timerDuration: 0,
     timerDurationNew: 0,
+    distance: 0,
     translateX: new Animated.Value(screen.width-140),
     fadeAnim: new Animated.Value(0),
   };
@@ -112,7 +123,8 @@ export default class MapScreen extends React.Component {
     this.keepAwakeDeactivate();
   }
 
-  eventSubscription;
+ eventSubscription ;
+ eventSubscriptionDistance ;
 
   getLocationAsync = async () => {
     const response = await Permissions.askAsync(Permissions.LOCATION).then(
@@ -136,7 +148,7 @@ export default class MapScreen extends React.Component {
     var count = 0;
     const getLoc = setInterval(async () => {
       const locationStatus = await Location.getProviderStatusAsync({
-        accuracy: 5,
+        accuracy: this.state.accuracy,
       });
       if (Platform.OS !== 'android' || locationStatus.networkAvailable) {
         clearInterval(getLoc);
@@ -155,6 +167,13 @@ export default class MapScreen extends React.Component {
           taskEventName,
           locations => {
             this.setState({ savedLocations: locations });
+          }
+        );
+
+        this.eventSubscriptionDistance = distanceEventsEmitter.addListener(
+          taskEventName,
+          distance => {
+            this.setState({ distance: distance });
           }
         );
 
@@ -263,7 +282,7 @@ export default class MapScreen extends React.Component {
         timeStart:this.state.timerStart , 
         timeEnd: new Date().getTime()
       }]);
-    console.log('savedRouters:', savedRouters)
+    // console.log('savedRouters:', savedRouters)
     // console.log('savedLocations:', this.state.savedLocations)
     await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
   }
@@ -285,6 +304,7 @@ export default class MapScreen extends React.Component {
       this.setState({ isTracking: false });
       this.stopLocationSave();
       await AsyncStorage.removeItem(STORAGE_KEY);
+      await AsyncStorage.removeItem(STORAGE_KEY_USER_DISTANCE);
 
     } else {
       await this.startLocationUpdates();
@@ -465,6 +485,7 @@ stopTimer = () =>{
 }
 
   render() {
+
     var timer = 0;
     this.state.isPause 
     ? timer = this.state.timerNow - this.state.timerStart + this.state.timerDuration
@@ -551,7 +572,7 @@ stopTimer = () =>{
                 <Text style={{ fontSize:14, textAlign:'center'}}>duration</Text>
               </View>
               <View>
-                <Text style={{ color:'white', fontSize:18, textAlign:'center'}}>24.33 km</Text>
+                <Text style={{ color:'white', fontSize:18, textAlign:'center'}}>{(this.state.distance).round(3)}km</Text>
                 <Text style={{ fontSize:14, textAlign:'center'}}>distance</Text>
               </View>
               
@@ -589,6 +610,7 @@ stopTimer = () =>{
 }
 
 
+var i = 1;
 
 
 
@@ -608,11 +630,37 @@ TaskManager.defineTask(
         longitude: coords.longitude,
       }));
 
+// if(i){
+//   console.log('i: ', i);
+//   ++i;
+// }
+// console.log('i: ',i);
+
+      // console.log('myhaversine: ',haversine({latitude: locations[0].coords.latitude-0.3, longitude: locations[0].coords.longitude-0.3},newLocations[0],{unit:'km'}));
+
       console.log(`Received new locations at ${new Date()}:`, locations);
+
+      endElement = savedLocations[savedLocations.length - 1];
+      // console.log('endElement:', endElement)
+
       savedLocations.push(...newLocations);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));  
       locationEventsEmitter.emit(taskEventName, savedLocations);
 
+      const savedDistance= await getSavedLocations(STORAGE_KEY_USER_DISTANCE);
+      console.log('savedDistance:', savedDistance)
+      if(savedDistance == null || savedDistance.length == 0){
+        
+        distance = 0;
+      }
+      else
+      {
+        console.log('myhaversine: ',haversine(endElement,newLocations[0],{unit:'km'}));
+
+        distance = parseFloat(savedDistance) + haversine(endElement,newLocations[0],{unit:'km'});
+      }
+      await AsyncStorage.setItem(STORAGE_KEY_USER_DISTANCE, JSON.stringify(distance));  
+      distanceEventsEmitter.emit(taskEventName, distance);      
     }
   }
 );
