@@ -139,7 +139,7 @@ const AppDrawerNavigator = createDrawerNavigator({
 },{
   drawerPosition: 'right', //Default is left
   contentComponent: CustomDrawerContentComponent,
-  drawerWidth: width,
+  drawerWidth: (4*width/5),
   // drawerLockMode:"locked-closed",
   edgeWidth: 20-width, // 20-width : 20 or whatever value you want to use as edgeWidth
   hideStatusBar: false,

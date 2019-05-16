@@ -1,21 +1,23 @@
 import React, { Component, PropTypes} from 'react';
-import {Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView } from 'react-native';
+import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView } from 'react-native';
 import {
     MapView,
 
   } from 'expo';
 
   import MyItem from '../Explore/MyItems'
+  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
 
-
-
+  // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
 
-  const LATITUDE_DELTA = 0.0922;
+  const LATITUDE_DELTA = 0.004;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-var coordinates = {
+  var id = 0;
+  var coordinates = [];
+var coordinatess = {
   route: [
     {  id: 0,
       coordinates: [
@@ -77,19 +79,42 @@ class MapScreen2 extends Component {
         exampleRegion: {
           latitude: 50.0713231,
           longitude: 19.9404102,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA
         }
       };
 
-      componentDidMount(){
 
-        if(coordinates.route[0].coordinates){
+      async componentWillUpdate(){
+        coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        // console.log(coordinates)
+      }
+      
+      async componentDidMount(){
+        coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        // console.log(coordinates)
+
+        // if(coordinates.route[0].coordinates){
+        //   this.setState((state)=>({ 
+        //     coordinatesMy: coordinates.route[0].coordinates ,
+        //     exampleRegion:{
+        //       latitude: coordinates.route[0].coordinates[0].latitude,
+        //       longitude: coordinates.route[0].coordinates[0].longitude,
+        //       latitudeDelta: LATITUDE_DELTA,
+        //       longitudeDelta: LONGITUDE_DELTA,
+
+        //     }
+        //   }));
+        // }
+
+        if(coordinates[0].coordinates.length>0){
+          // console.log('kghkh')
           this.setState((state)=>({ 
-            coordinatesMy: coordinates.route[0].coordinates ,
+            coordinates: coordinates,
+            coordinatesMy: coordinates[0].coordinates ,
             exampleRegion:{
-              latitude: coordinates.route[0].coordinates[0].latitude,
-              longitude: coordinates.route[0].coordinates[0].longitude,
+              latitude: coordinates[0].coordinates[0].latitude,
+              longitude: coordinates[0].coordinates[0].longitude,
               latitudeDelta: LATITUDE_DELTA,
               longitudeDelta: LONGITUDE_DELTA,
 
@@ -97,17 +122,19 @@ class MapScreen2 extends Component {
           }));
         }
 
+
+
       }
 
       updateMap = (id) => {
-      // console.log('id', id);
-      const latitude = coordinates.route[id].coordinates[0].latitude;
-      const longitude = coordinates.route[id].coordinates[0].longitude;
+      console.log('id', id);
+      const latitude = coordinates[id].coordinates[0].latitude;
+      const longitude = coordinates[id].coordinates[0].longitude;
       const latitudeDelta = this.state.exampleRegion.latitudeDelta;
       const longitudeDelta = this.state.exampleRegion.longitudeDelta;
 
       this.setState(()=>({ 
-        coordinatesMy: coordinates.route[id].coordinates ,
+        coordinatesMy: coordinates[id].coordinates ,
         exampleRegion:{
           latitude: latitude,
           longitude: longitude,
@@ -174,7 +201,7 @@ class MapScreen2 extends Component {
 
     render() {
 
-
+      // console.log('coordinates:', coordinates)
           const {
             coordinatesMy,
             exampleRegion
@@ -184,6 +211,7 @@ class MapScreen2 extends Component {
           // console.log('coordinates1:', coordinates1)
           // console.log('coordinates:', coordinates.route[1].coordinates)
           // console.log('coordinatesMy:', coordinatesMy)
+          // console.log('coordinates:', coordinates)
 
 
 
@@ -200,7 +228,7 @@ class MapScreen2 extends Component {
                 showsHorizontalScrollIndicator = {false}>
 
                 {
-                  coordinates.route.map((myRoute) =>{
+                  coordinates.map((currentValue,index ) =>{
                     {/* const latitude = myRoute.coordinates[0].latitude;
                     const longitude = myRoute.coordinates[0].longitude;
                     const latitudeDelta = LATITUDE_DELTA;
@@ -208,7 +236,7 @@ class MapScreen2 extends Component {
                     
                   return (
                   <MyItem imageUri = {require('../assets/logo1.png')}
-                        text = {'trasa '+(myRoute.id + 1)} myOnPress = { ()=>this.updateMap(myRoute.id)}  key = {myRoute.id}
+                        text = {'trasa '+(index + 1 )} myOnPress = { ()=>this.updateMap(index)}  onLongPressButton = { ()=>{Alert.alert('You long-pressed the button! ! '+ index)}} key = {index}
 
                         // myExampleRegion = {{
                         //   latitude: latitude,
@@ -256,11 +284,11 @@ class MapScreen2 extends Component {
             </MapView>
             )}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble, styles.button]} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble, styles.button]} >
+              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble]} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble]} >
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -283,18 +311,17 @@ const styles = StyleSheet.create({
     },
     bubble: {
       backgroundColor: 'rgba(255,255,255,0.9)',
-      paddingHorizontal: 18,
-      paddingVertical: 12,
-      borderRadius: 20,
-    },
-
-    button: {
-      width: 60,
-      paddingHorizontal: 12,
-      alignItems: 'center',
+      width:50,
+      height:50,
+      borderRadius: 30,
       marginTop: 10,
       marginLeft: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize:25,
     },
+
+
 
     buttonContainer: {
       flexDirection: 'column',

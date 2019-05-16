@@ -1,18 +1,21 @@
 # GPSProject
 
 ## Documentation
-https://docs.expo.io/versions/v32.0.0/introduction/installation/
-https://facebook.github.io/react-native/docs/getting-started
-https://reactnavigation.org/docs/en/getting-started.html
-https://react-native-training.github.io/react-native-elements/docs/getting_started.html
+- [Expo](https://docs.expo.io/versions/v32.0.0/introduction/installation/)
+- [React Native](https://facebook.github.io/react-native/docs/getting-started)
+- [React Navigation](https://reactnavigation.org/docs/en/getting-started.html)
+- [React Native Elements](https://react-native-training.github.io/react-native-elements/docs/getting_started.html)
 
 ## Installation
 Create a working copy of a local repository by running the command
 ```sh
 git clone https://github.com/MrTweety/GPSProject.git
+cd GPSProject
 ```
-
-
+Install dependencies
+```sh
+npm install 
+```
 Install the `react-navigation` package in your React Native project.
 ```sh
 npm install --save react-navigation

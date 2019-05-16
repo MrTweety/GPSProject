@@ -10,6 +10,8 @@ import {
   Alert,
   AsyncStorage,
   AppState,
+  PixelRatio,
+
 } from 'react-native';
 import { Button } from 'react-native-elements';
 import {
@@ -20,23 +22,36 @@ import {
   Location,
   Marker,
   TaskManager,
+  KeepAwake
 } from 'expo';
 import { EventEmitter, EventSubscription } from 'fbemitter';
 import { NavigationEvents } from 'react-navigation';
-import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome, MaterialIcons,Entypo } from '@expo/vector-icons';
+import moment from "moment";
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
+const mapPaddingBottom = screen.height * 0.55;
+const mapPaddingTop = screen.height * 0.1;
 
 const LATITUDE_DELTA = 0.004;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 
 // import geolocationService from './services/geolocationService';
-const STORAGE_KEY = 'background-location-storage';
+// const STORAGE_KEY = 'background-location-storage';
+// const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
+
+import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY, STORAGE_KEY_USER_DISTANCE } from '../Explore/MyStorage.js'
+import haversine from '../Explore/MyHaversine'
+
+
+
 const LOCATION_TASK_NAME = 'background-location-task';
 const taskEventName = 'task-update';
 
 const locationEventsEmitter = new EventEmitter();
+const distanceEventsEmitter = new EventEmitter();
 
 const locationAccuracyStates = {
   [Location.Accuracy.Lowest]: Location.Accuracy.Low,
@@ -54,26 +69,62 @@ const exampleRegion = {
   longitudeDelta: 0.0421,
 };
 
+function Timer(props){
+  const duration = moment.duration(props.interval);
+  return (
+    <Text style={props.myStyleText}>
+      {duration.hours() > 9 ? duration.hours() : '0' + duration.hours()}:
+      {duration.minutes() > 9 ? duration.minutes() : '0' + duration.minutes()}:
+      {duration.seconds() > 9 ? duration.seconds() : '0' + duration.seconds()}
+    </Text>
+  );}
+
+  Number.prototype.round = function(place) {
+    return +(Math.round(this+"e+" + place)+ "e-" + place);
+}
+
+
+
 export default class MapScreen extends React.Component {
   static navigationOptions = {
     title: 'Background location',
   };
 
+  
   mapViewRef = React.createRef();
 
   state = {
     accuracy: Location.Accuracy.Highest,
     isTracking: false,
+    isPause: false,
     showsBackgroundLocationIndicator: false,
     savedLocations: [],
     geofencingRegions: [],
+    timerStart: 0,
+    timerNow: 0,
+    timerDuration: 0,
+    timerDurationNew: 0,
+    distance: 0,
+    translateX: new Animated.Value(screen.width-140),
+    fadeAnim: new Animated.Value(0),
   };
 
-  componentDidMount() {
-    this.getLocationAsync();
+  keepAwakeActivate = () => {
+    KeepAwake.activate();
   }
 
-  eventSubscription;
+  keepAwakeDeactivate = () => {
+    // KeepAwake.deactivate();//TODO:odkomentowac to w finalnej wersji :D 
+  }
+  
+  componentDidMount() {
+    this.getLocationAsync();
+    this.keepAwakeActivate();//TODO: wywalić w finalnej wersji :D
+    this.keepAwakeDeactivate();
+  }
+
+ eventSubscription ;
+ eventSubscriptionDistance ;
 
   getLocationAsync = async () => {
     const response = await Permissions.askAsync(Permissions.LOCATION).then(
@@ -97,7 +148,7 @@ export default class MapScreen extends React.Component {
     var count = 0;
     const getLoc = setInterval(async () => {
       const locationStatus = await Location.getProviderStatusAsync({
-        accuracy: 5,
+        accuracy: this.state.accuracy,
       });
       if (Platform.OS !== 'android' || locationStatus.networkAvailable) {
         clearInterval(getLoc);
@@ -109,7 +160,7 @@ export default class MapScreen extends React.Component {
         const task = (await TaskManager.getRegisteredTasksAsync()).find(
           ({ taskName }) => taskName === LOCATION_TASK_NAME
         );
-        const savedLocations = await getSavedLocations();
+        const savedLocations = await getSavedLocations(STORAGE_KEY);
         const accuracy = (task && task.options.accuracy) || this.state.accuracy;
 
         this.eventSubscription = locationEventsEmitter.addListener(
@@ -119,8 +170,15 @@ export default class MapScreen extends React.Component {
           }
         );
 
+        this.eventSubscriptionDistance = distanceEventsEmitter.addListener(
+          taskEventName,
+          distance => {
+            this.setState({ distance: distance });
+          }
+        );
+
         if (!isTracking) {
-          alert('Click `Start tracking` to start getting location updates.');
+          // alert('Click `Start tracking` to start getting location updates.');
         }
 
         this.setState({
@@ -180,31 +238,58 @@ export default class MapScreen extends React.Component {
   }
 
   async startLocationUpdates(accuracy = this.state.accuracy) {
+    this.keepAwakeActivate();
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy,
-      showsBackgroundLocationIndicator: this.state
-        .showsBackgroundLocationIndicator,
-      deferredUpdatesInterval: 60 * 1000, // 1 minute
-      deferredUpdatesDistance: 100, // 100 meters
+      showsBackgroundLocationIndicator: this.state.showsBackgroundLocationIndicator,
+      deferredUpdatesInterval: 30 * 1000, // 30sec
+      deferredUpdatesDistance: 10, // 10 meters
       foregroundService: {
         notificationTitle: 'expo-location-demo',
         notificationBody: 'Background location is running...',
-        notificationColor: '#4630ec',
+        notificationColor: '#463',
       },
+      foregroundService:{}
     });
-    if (!this.state.isTracking) {
-      alert(
-        // tslint:disable-next-line max-line-length
-        'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
-      );
-    }
-    this.setState({ isTracking: true });
+    // if (!this.state.isTracking) {
+    //   alert(
+    //     // tslint:disable-next-line max-line-length
+    //     'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
+    //   );
+    // }
+    // this.setState({ isTracking: true });
+    this.startTimer();
   }
 
   async stopLocationUpdates() {
+    this.keepAwakeDeactivate();
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    this.setState({ isTracking: false });
+    // this.setState({ isTracking: false });
+    this.stopTimer();
   }
+
+  async stopLocationSave() {
+    // await AsyncStorage.removeItem(STORAGE_KEY_USER_ROUTERS);
+
+    if(this.state.savedLocations && this.state.savedLocations.length>1){
+
+    const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    console.log('savedRouters:', savedRouters)
+
+    savedRouters.push(...[
+      {
+        coordinates: this.state.savedLocations,
+        timeStart:this.state.timerStart , 
+        timeEnd: new Date().getTime()
+      }]);
+    // console.log('savedRouters:', savedRouters)
+    // console.log('savedLocations:', this.state.savedLocations)
+    await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
+  }
+  }
+
+
+
 
   clearLocations = async () => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
@@ -212,14 +297,55 @@ export default class MapScreen extends React.Component {
   };
 
   toggleTracking = async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+
 
     if (this.state.isTracking) {
       await this.stopLocationUpdates();
+      this.setState({ isTracking: false });
+      this.stopLocationSave();
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      await AsyncStorage.removeItem(STORAGE_KEY_USER_DISTANCE);
+
     } else {
       await this.startLocationUpdates();
+      this.setState({ isTracking: true });
     }
-    this.setState({ savedLocations: [] }); //TODO: wywalić?
+
+
+    this.animatedToggleTracking();
+    this.setState({ savedLocations: [], //TODO: czy na pewno czycić tu? 
+      timerDuration: 0 }); 
+  };
+
+
+
+
+  animatedToggleTracking = () => {
+    Animated.spring(this.state.translateX, {
+      toValue: !this.state.isTracking ? screen.width-140 : 0,
+      velocity: 3,
+    }).start();
+    Animated.spring(this.state.fadeAnim, {
+      toValue: !this.state.isTracking ? 0 : 1,
+      velocity: 3,
+    }).start(); 
+  }
+
+  togglePause = async () => {
+
+    if (!this.state.isPause) {  
+      await this.stopLocationUpdates();
+      const timerDuration = this.state.timerDurationNew;
+      const timerDurationNew = this.state.timerNow - this.state.timerStart + this.state.timerDurationNew;
+      this.setState({ isPause: true,
+        timerDuration: timerDuration,
+        timerDurationNew: timerDurationNew,
+      });
+      
+    } else {
+      await this.startLocationUpdates();
+      this.setState({ isPause: false });
+    }
   };
 
   onAccuracyChange = () => {
@@ -332,23 +458,62 @@ export default class MapScreen extends React.Component {
     );
   }
 
+  setMapPadding = () => {
+    const iosEdgePadding = { top: mapPaddingTop * 0.5, right: 0, bottom: mapPaddingBottom * 0.95, left: 0 };
+    const androidEdgePadding = { top: PixelRatio.getPixelSizeForLayoutSize(screen.height * 0), right: 0, bottom: PixelRatio.getPixelSizeForLayoutSize(screen.height * 0.17), left: 0 };
+    const edgePadding = (Platform.OS === 'android') ? androidEdgePadding : iosEdgePadding;
+    return edgePadding;
+}
+
+startTimer = () =>{
+  const timerNow = new Date().getTime();
+  this.setState({
+    timerStart: timerNow,
+    timerNow: timerNow,
+  });
+  this.timer = setInterval(()=> {
+    // if(this.state.isTracking)
+      this.setState({ timerNow: new Date().getTime() })
+  },1000)
+}
+stopTimer = () =>{
+  // this.setState({
+  //   timerStart: 0,
+  //   timerNow: 0,
+  // });
+  clearInterval(this.timer);
+}
+
   render() {
 
+    var timer = 0;
+    this.state.isPause 
+    ? timer = this.state.timerNow - this.state.timerStart + this.state.timerDuration
+    : timer = this.state.timerNow - this.state.timerStart + this.state.timerDurationNew
 
+    this.state.isTracking ? this.animatedToggleTracking() : null;
+    // this.animatedToggleTracking() ;
+
+    const translateX = this.state.translateX;
     return (
       <View style={styles.container}>
         {this.state.error ? (
           <Text style={styles.errorText}>{this.state.error}</Text>
         ) : null}
-
+        
         {!!exampleRegion && (
           <MapView
             style={{ flex: 1 }}
+            // mapPadding={this.setMapPadding()} //Goolge label 
+            legalLabelInsets={{bottom:200}}
             showsUserLocation={true}
             showsMyLocationButton={true}
+            showsScale={true}
             ref={this.mapViewRef}
             initialRegion={this.state.initialRegion}
-            provider="google">
+            provider="google"
+            >
+
             {this.renderPolyline()}
           </MapView>
         )}
@@ -359,9 +524,10 @@ export default class MapScreen extends React.Component {
               {Platform.OS === 'android' ? null : (
 
                 <Button
-                style={styles.button}
+                buttonStyle={[styles.bubble, styles.button]}
+                titleStyle ={{color: COLOR_BUTTON_TEXT}}
                 onPress={this.onCenterMap}
-                icon={{ name: 'location-arrow',type: 'font-awesome', size: 18, color: 'white' }}
+                icon={{ name: 'location-arrow',type: 'font-awesome', size: 18, color: COLOR_BUTTON_TEXT }}
                 iconLeft
                 title={(!this.state.showsBackgroundLocationIndicator
                       ? 'Hide'
@@ -373,49 +539,81 @@ export default class MapScreen extends React.Component {
               )}
               <Button
                 title={`Accuracy: ${Location.Accuracy[this.state.accuracy].toString()}`}
-                style={styles.button}
+                style={styles.bubble}
                 onPress={this.onAccuracyChange}
               />
             </View>
-            <View style={styles.buttonsColumn}>
+          </View>
+          <View style={styles.buttonsColumn}>
+            <View style={styles.bottomButtons}>
               <Button
-                style={styles.button}
+              buttonStyle={[ styles.circleButton]}
                 onPress={this.onCenterMap}
-                icon={{ name: 'my-location', size: 18, color: 'white' }}
+                icon={{ name: 'my-location', size: 25, color: COLOR_BUTTON_TEXT }}
                 iconLeft
               />
             </View>
-          </View>
+          
 
           <View style={styles.bottomButtons}>
-            <Button
+            {/* <Button
               title="Clear Locations"
-              style={styles.button}
+              buttonStyle={[styles.bubble]}
+              titleStyle ={{color: COLOR_BUTTON_TEXT}}
               onPress={this.clearLocations}
-            />
+            /> */}
+            {this.state.isTracking || 1
+            ?
+            <Animated.View style={{flexDirection: 'row',opacity: this.state.fadeAnim, transform: [{translateX}]}}>
+            <View style={{backgroundColor:COLOR_BUTTON_TEXT, width:screen.width-140, height:50, borderRadius:50, 
+                flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 20}}>
+              <View >
+                <Timer interval = {timer} myStyleText={{color:'white', fontSize:18, textAlign:'center'}} />  
+                <Text style={{ fontSize:14, textAlign:'center'}}>duration</Text>
+              </View>
+              <View>
+                <Text style={{ color:'white', fontSize:18, textAlign:'center'}}>{(this.state.distance).round(3)}km</Text>
+                <Text style={{ fontSize:14, textAlign:'center'}}>distance</Text>
+              </View>
+              
+            </View>
+
             <Button
-              title={(this.state.isTracking
-                ? 'Stop tracking'
-                : 'Start tracking'
-              ).toString()}
-              style={styles.button}
+              buttonStyle={[ styles.circleButton]}
+              onPress={this.onCenterMap}
+              icon={(!this.state.isPause
+              ? {name: 'controller-paus', type: 'entypo', size: 25, color: COLOR_BUTTON_TEXT}
+              : {name: 'controller-play', type: 'entypo', size: 25, color: COLOR_BUTTON_TEXT})}
+              iconLeft
+              onPress={this.togglePause}
+            />
+            </Animated.View>
+            : null
+            }
+            <Button
+              buttonStyle={[ styles.circleButton]}
+              onPress={this.onCenterMap}
+              icon={(!this.state.isTracking
+                ? { name: 'controller-play', type: 'entypo', size: 25, color: 'green'}
+                :{ name: 'controller-stop', type: 'entypo', size: 25, color: 'red'})}
+              iconLeft
               onPress={this.toggleTracking}
             />
+
           </View>
         </View>
       </View>
+      <View style={styles.mapDrawerOverlay} />
+    </View>
     );
   }
 }
 
-async function getSavedLocations() {
-  try {
-    const item = await AsyncStorage.getItem(STORAGE_KEY);
-    return item ? JSON.parse(item) : [];
-  } catch (e) {
-    return [];
-  }
-}
+
+var i = 1;
+
+
+
 
 TaskManager.defineTask(
   LOCATION_TASK_NAME,
@@ -426,20 +624,47 @@ TaskManager.defineTask(
       return;
     }
     if (locations && locations.length > 0) {
-      const savedLocations = await getSavedLocations();
+      const savedLocations = await getSavedLocations(STORAGE_KEY);
       const newLocations = locations.map(({ coords }) => ({
         latitude: coords.latitude,
         longitude: coords.longitude,
       }));
 
+// if(i){
+//   console.log('i: ', i);
+//   ++i;
+// }
+// console.log('i: ',i);
+
+      // console.log('myhaversine: ',haversine({latitude: locations[0].coords.latitude-0.3, longitude: locations[0].coords.longitude-0.3},newLocations[0],{unit:'km'}));
+
       console.log(`Received new locations at ${new Date()}:`, locations);
+
+      endElement = savedLocations[savedLocations.length - 1];
+      // console.log('endElement:', endElement)
+
       savedLocations.push(...newLocations);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));  
       locationEventsEmitter.emit(taskEventName, savedLocations);
 
+      const savedDistance= await getSavedLocations(STORAGE_KEY_USER_DISTANCE);
+      console.log('savedDistance:', savedDistance)
+      if(savedDistance == null || savedDistance.length == 0){
+        
+        distance = 0;
+      }
+      else
+      {
+        console.log('myhaversine: ',haversine(endElement,newLocations[0],{unit:'km'}));
+
+        distance = parseFloat(savedDistance) + haversine(endElement,newLocations[0],{unit:'km'});
+      }
+      await AsyncStorage.setItem(STORAGE_KEY_USER_DISTANCE, JSON.stringify(distance));  
+      distanceEventsEmitter.emit(taskEventName, distance);      
     }
   }
 );
+
 
 const styles = StyleSheet.create({
   container: {
@@ -461,21 +686,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bottomButtons: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    marginBottom:10,
   },
   buttonsColumn: {
     flexDirection: 'column',
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
+    marginBottom:10,
+    
   },
-  button: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginVertical: 5,
-  },
+
   errorText: {
     fontSize: 15,
     color: 'rgba(0,0,0,0.7)',
     margin: 20,
+  },
+
+  mapDrawerOverlay: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    opacity: 0.0,
+    height: Dimensions.get('window').height,
+    width: 20,
+  },
+
+  circleButton: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    width:50,
+    height:50,
+    borderRadius: 50,
+    marginLeft:10,
+    padding: 0,
+ 
   },
 });
