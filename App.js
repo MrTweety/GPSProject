@@ -88,7 +88,7 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
       headerTitle: routeName
     };
   },
-  shifting: false, //Color for the tab bar when the tab corresponding to the screen is active. Used for the ripple effect. This is only supported when shifting is true.
+  shifting: true, //Color for the tab bar when the tab corresponding to the screen is active. Used for the ripple effect. This is only supported when shifting is true.
   labeled: true,
    activeColor: '#222',
    inactiveColor: 'grey',
