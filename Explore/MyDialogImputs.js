@@ -1,3 +1,10 @@
+// Copyright 2018 Jose Estrella - react-native-dialog-input
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
 import React from 'react';
 import { StyleSheet, Text, View, Modal, TextInput, TouchableOpacity,
          Platform } from 'react-native';
@@ -18,13 +25,18 @@ class DialogInput extends React.Component{
       value = this.props.initValueTextInput ? this.props.initValueTextInput : '';
     }
 
+    let textInputVisible = this.props.textInputVisible===false ? false :true;
+    let opcionalTextVisible = this.props.opcionalTextVisible === true ? true :false;
     let textProps = this.props.textInputProps || null;
     let modalStyleProps = this.props.modalStyle || {};
     let dialogStyleProps = this.props.dialogStyle || {};
+    var opcionalText = this.props.opcionalText || 'Opcional';
     var cancelText = this.props.cancelText || 'Cancel';
     var submitText = this.props.submitText || 'Submit';
+    
     cancelText = (Platform.OS === 'ios')? cancelText:cancelText.toUpperCase();
     submitText = (Platform.OS === 'ios')? submitText:submitText.toUpperCase();
+    opcionalText = (Platform.OS === 'ios')? opcionalText:opcionalText.toUpperCase();
 
     return(
       <Modal
@@ -41,28 +53,48 @@ class DialogInput extends React.Component{
               <View style={styles.modal_body} >
                 <Text style={styles.title_modal}>{title}</Text>
                 <Text style={[this.props.message ? styles.message_modal : {height:0} ]}>{this.props.message}</Text>
-                <TextInput style={styles.input_container}
-                  autoCorrect={(textProps && textProps.autoCorrect==false)?false:true}
-                  autoCapitalize={(textProps && textProps.autoCapitalize)?textProps.autoCapitalize:'none'}
-                  clearButtonMode={(textProps && textProps.clearButtonMode)?textProps.clearButtonMode:'never'}
-                  clearTextOnFocus={(textProps && textProps.clearTextOnFocus==true)?textProps.clearTextOnFocus:false}
-                  keyboardType={(textProps && textProps.keyboardType)?textProps.keyboardType:'default'}
-                  autoFocus={true}
-                  onKeyPress={() => this.setState({ openning: false })}
-                  underlineColorAndroid='transparent'
-                  placeholder={hintInput}
-                  onChangeText={(inputModal) => this.setState({inputModal})}
-                  value={value}
-                  />
-              </View>
+                {textInputVisible ? <TextInput style={styles.input_container}
+                    autoCorrect={(textProps && textProps.autoCorrect==false)?false:true}
+                    autoCapitalize={(textProps && textProps.autoCapitalize)?textProps.autoCapitalize:'none'}
+                    clearButtonMode={(textProps && textProps.clearButtonMode)?textProps.clearButtonMode:'never'}
+                    clearTextOnFocus={(textProps && textProps.clearTextOnFocus==true)?textProps.clearTextOnFocus:false}
+                    keyboardType={(textProps && textProps.keyboardType)?textProps.keyboardType:'default'}
+                    autoFocus={true}
+                    onKeyPress={() => this.setState({ openning: false })}
+                    underlineColorAndroid='transparent'
+                    placeholder={hintInput}
+                    onChangeText={(inputModal) => this.setState({inputModal})}
+                    value={value}
+                    /> : null
+                }
+                
+                    <View 
+                        style={[this.props.children ? styles.message_modal : {height:0} ]}>{this.props.children}
+                    </View>
+                    
+                </View>
               <View style={styles.btn_container}>
-                <TouchableOpacity style={styles.touch_modal}
-                  onPress={() => {
-                    this.props.closeDialog();
-                    this.setState({ inputModal: '',openning: true })
-                  }}>
-                  <Text style={styles.btn_modal_left}>{cancelText}</Text>
-                </TouchableOpacity>
+                {opcionalTextVisible ? 
+                <View>
+                    <TouchableOpacity style={styles.touch_modal}
+                    onPress={() => {
+                        this.props.opcionalAction();
+                        this.setState({ inputModal: '',openning: true })
+                    }}>
+                    <Text style={styles.btn_modal_left}>{opcionalText}</Text>
+                    </TouchableOpacity>
+                    <View style={styles.divider_btn}></View>
+                </View>
+                : null}
+
+                    <TouchableOpacity style={styles.touch_modal}
+                    onPress={() => {
+                        this.props.closeDialog();
+                        this.setState({ inputModal: '',openning: true })
+                    }}>
+                    <Text style={styles.btn_modal_left}>{cancelText}</Text>
+
+                    </TouchableOpacity>
                 <View style={styles.divider_btn}></View>
                 <TouchableOpacity  style={styles.touch_modal}
                   onPress={() => {
@@ -71,6 +103,7 @@ class DialogInput extends React.Component{
                   }}>
                   <Text style={styles.btn_modal_right}>{submitText}</Text>
                 </TouchableOpacity>
+                
               </View>
             </View>
           </TouchableOpacity>
