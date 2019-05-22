@@ -1,5 +1,5 @@
 import React, { Component, PropTypes} from 'react';
-import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView } from 'react-native';
+import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView, RefreshControl  } from 'react-native';
 import {
     MapView,
 
@@ -7,7 +7,7 @@ import {
 
   import MyItem from '../Explore/MyItems'
   import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
-
+  import DialogInput from '../Explore/MyDialogImputs';
   // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -15,74 +15,37 @@ import {
   const LATITUDE_DELTA = 0.004;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-  var id = 0;
+  //var id = 0;
   var coordinates = [];
-var coordinatess = {
-  route: [
-    {  id: 0,
-      coordinates: [
-      { latitude: 50.0513231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 1,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 2,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 3,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 4,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 5,
-      coordinates: [
-      { latitude: 51.0113231, longitude: 20.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]}
-  ]
-};
 
 
+
+  function fetchData(){
+    var z =0;
+    for(let i =0;i<10000;++i){
+      z++;
+    }
+    //TODO: fetchData
+    return true;
+  }
 
 class MapScreen2 extends Component {
-    state = {
-        coordinatesMy:[],
-
-        exampleRegion: {
+  constructor(props) {
+    super(props);
+    this.state = {
+      coordinatesMy:[],
+      isDialogVisible_DeleteSaveRouteDecision: false,
+      exampleRegion: {
           latitude: 50.0713231,
           longitude: 19.9404102,
           latitudeDelta: LATITUDE_DELTA,
           longitudeDelta: LONGITUDE_DELTA
-        }
-      };
+      },
+      refreshing: false,
+    };
+  }
+
+
 
 
       async componentWillUpdate(){
@@ -191,41 +154,88 @@ class MapScreen2 extends Component {
     onRegionChange(region, lastLat, lastLong) {
       this.setState({
         exampleRegion: region,
-           lastLat: lastLat || this.state.lastLat,
-           lastLong: lastLong || this.state.lastLong
+          lastLat: lastLat || this.state.lastLat,
+          lastLong: lastLong || this.state.lastLong
       });
   }
 
 
 
+  deleteSaveRoute =async () => {
+
+    coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    // console.log('coordinates:', coordinates)
+    console.log('coordinates.length:', coordinates.length)
+    const indexToDelete = this.setState;
+    coordinates.splice(indexToDelete, 1);
+    console.log('coordinates.length:', coordinates.length)
+    await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+      this.showDeleteDialog(false);
+      this.setState(()=>({indexToDelete: -1 }));
+    });  
+    //Alert.alert('You long-pressed the button! ! '+ id);
+    //this.showDeleteDialog(false);
+    //this.setState(()=>({indexToDelete: -1 }));
+  }
+
+
+  showDeleteDialog(isShow, index = -1){
+    if(index!=-1){
+      this.setState(()=>({indexToDelete: index }));
+    }
+    this.setState({isDialogVisible_DeleteSaveRouteDecision: isShow});
+
+  }
+
+
+
+  _onRefresh = () => {
+    this.setState({refreshing: true});
+    fetchData();
+    // .then(() => {
+    //   this.setState({refreshing: false});
+    // });
+
+    this.setState({refreshing: false});
+  }
+
 
     render() {
 
-      // console.log('coordinates:', coordinates)
+
           const {
             coordinatesMy,
             exampleRegion
           } = this.state;
-          // console.log('exampleRegion:', exampleRegion)
-
-          // console.log('coordinates1:', coordinates1)
-          // console.log('coordinates:', coordinates.route[1].coordinates)
-          // console.log('coordinatesMy:', coordinatesMy)
-          // console.log('coordinates:', coordinates)
-
 
 
         return(
 
         <View style={styles.container}>
+          <DialogInput 
+            isDialogVisible={this.state.isDialogVisible_DeleteSaveRouteDecision}
+            title={"Do you want to delete this track?"}
+            message={""}
+            textInputVisible = {false}
+            submitInput={ () => {this.deleteSaveRoute()} }
+            closeDialog={ () => {this.showDeleteDialog(false)}}
+            submitText={"Delete"}>
+          </DialogInput>
+
         <View style = {{flex:1, backgroundColor:'white', paddingTop:20, margin: 0}}>
             <Text style={{ fontSize:18, fontWeight: '700', paddingHorizontal: 20}}>
             Twoje Trasy:
             </Text>
             <View style = {{height:130, marginTop:20}}>
                 <ScrollView 
-                horizontal = {true}
-                showsHorizontalScrollIndicator = {false}>
+                  refreshControl={
+                            <RefreshControl
+                              refreshing={this.state.refreshing}
+                              onRefresh={this._onRefresh}
+                            />
+                          }
+                  horizontal = {true}
+                  showsHorizontalScrollIndicator = {false}>
 
                 {
                   coordinates.map((currentValue,index ) =>{
@@ -233,10 +243,11 @@ class MapScreen2 extends Component {
                     const longitude = myRoute.coordinates[0].longitude;
                     const latitudeDelta = LATITUDE_DELTA;
                     const longitudeDelta = LONGITUDE_DELTA; */}
+
                     
                   return (
                   <MyItem imageUri = {require('../assets/logo1.png')}
-                        text = {'trasa '+(index + 1 )} myOnPress = { ()=>this.updateMap(index)}  onLongPressButton = { ()=>{Alert.alert('You long-pressed the button! ! '+ index)}} key = {index}
+                        text = {'trasa :' + currentValue.trackName} myOnPress = { ()=>this.updateMap(index)}  onLongPressButton = { ()=>this.showDeleteDialog(true,index)} key = {index}
 
                         // myExampleRegion = {{
                         //   latitude: latitude,

@@ -82,11 +82,16 @@ class DialogInput extends React.Component{
                         this.setState({ inputModal: '',openning: true })
                     }}>
                     <Text style={styles.btn_modal_left}>{opcionalText}</Text>
+                    
                     </TouchableOpacity>
-                    <View style={styles.divider_btn}></View>
+                    
                 </View>
+                
                 : null}
 
+
+                {opcionalTextVisible ? <View style={styles.divider_btn}></View>: null}
+                
                     <TouchableOpacity style={styles.touch_modal}
                     onPress={() => {
                         this.props.closeDialog();
