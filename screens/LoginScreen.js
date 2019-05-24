@@ -1,9 +1,11 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Button, Image } from 'react-native';
+import { View, Text, StyleSheet, Button, Image, TouchableOpacity } from 'react-native';
 import firebase  from  'firebase';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 
-class LoginScreen extends Component {
+class LoginScreen extends Component { 
+  
 
      isUserEqual = (googleUser, firebaseUser) => {
         if (firebaseUser) {
@@ -98,18 +100,25 @@ class LoginScreen extends Component {
                 <Text style={{fontSize: 18, fontWeight: 'bold'}}>
                   Welcome in Driving Test!
                 </Text>
-              </View>
 
-              <View>
-                <Image source={require('./assets/logo2_3.png')}  />
+                <View style ={{alignItems: 'center', justifyContent: 'center', paddingTop: 100}}>
+                  <Image source={require('../assets/logo2_3.png')}  />
+                </View>
+
               </View>
 
               <View style ={styles.login_screen_view}>
-                <View style={styles.login_screen_button}>
-                  <Button title='Login with Google' onPress = {()=> this.signInWithGoogleAsync()} />
+                <View style={{padding: 10}}>
+                  <TouchableOpacity onPress = {()=> this.signInWithGoogleAsync()} style={styles.my_button} activeOpacity = {0.8}>
+                    <Text style={{color: "white"}}>Login with Google </Text>
+                    <MaterialCommunityIcons name={"google-plus"} size={30} color="white" />  
+                  </TouchableOpacity> 
                 </View>
-                <View style = {styles.login_screen_button}>
-                  <Button title='Continue without logging' onPress = {()=> this.props.navigation.navigate('Dashboard') } />
+
+                <View style = {{padding: 10}}>
+                  <TouchableOpacity onPress = {()=> this.props.navigation.navigate('Dashboard') } style={[styles.my_button,{backgroundColor: "#4d9ceb"}]} activeOpacity = {0.8}>
+                    <Text style={{color: "white"}}>Continue without logging</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
               
@@ -129,14 +138,25 @@ const styles = StyleSheet.create({
     padding: 1,
     flex: 1,
     paddingTop: 40,
+    height: 200,
   },
   login_screen_view:{
     flex: 1,
     paddingTop: 30,
     width: '100%',
   },
-  login_screen_button:{
-    padding: 10,
-  },
+  my_button:{
+    backgroundColor: '#d95333',
+    justifyContent:'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderRadius: 3,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height:5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 5
+  }
 
 });
