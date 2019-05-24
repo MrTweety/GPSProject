@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Button, Image } from 'react-native';
 import firebase  from  'firebase';
 
 
@@ -92,14 +92,27 @@ class LoginScreen extends Component {
 
     render() {
         return (
-            <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
+            <View style={{flex:1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
 
+              <View style ={styles.login_screen_view_header}>
+                <Text style={{fontSize: 18, fontWeight: 'bold'}}>
+                  Welcome in Driving Test!
+                </Text>
+              </View>
 
-              <Button title='Login Google' onPress = {()=> this.signInWithGoogleAsync()} />
-              <Text>
-                WelcomeScreen:
-              </Text>
-              <Button title='Continue without logging' onPress = {()=> this.props.navigation.navigate('Dashboard') } />
+              <View>
+                <Image source={require('./assets/logo2_3.png')}  />
+              </View>
+
+              <View style ={styles.login_screen_view}>
+                <View style={styles.login_screen_button}>
+                  <Button title='Login with Google' onPress = {()=> this.signInWithGoogleAsync()} />
+                </View>
+                <View style = {styles.login_screen_button}>
+                  <Button title='Continue without logging' onPress = {()=> this.props.navigation.navigate('Dashboard') } />
+                </View>
+              </View>
+              
             </View>
             
           );
@@ -109,3 +122,21 @@ class LoginScreen extends Component {
 
 
 export default LoginScreen;
+
+const styles = StyleSheet.create({
+
+  login_screen_view_header:{
+    padding: 1,
+    flex: 1,
+    paddingTop: 40,
+  },
+  login_screen_view:{
+    flex: 1,
+    paddingTop: 30,
+    width: '100%',
+  },
+  login_screen_button:{
+    padding: 10,
+  },
+
+});
