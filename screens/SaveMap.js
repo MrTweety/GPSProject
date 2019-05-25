@@ -171,19 +171,24 @@ class SaveMap extends Component {
     coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
     // console.log('coordinates:', coordinates)
     console.log('coordinates.length:', coordinates.length)
-    // const indexToDelete = this.state;//distaje TimeEND
+    const {indexToDelete} = this.state;//distaje TimeEND
+    console.log('indexToDelete:', indexToDelete)
 
-    // const indexToDeleteNumber = coordinates.indexOf(indexToDelete)
-    // console.log('indexToDeleteNumber:', indexToDeleteNumber)
-    //const indexToDelete = this.setState;
-    // if(indexToDeleteNumber >= 0){
-      coordinates.splice(1, 1);
+    const indexToDeleteNumber = coordinates.findIndex((element)=>{
+      console.log('element',element)
+      return element.timeEnd == indexToDelete.timeEnd;
+    });
+    console.log('indexToDeleteNumber:', indexToDeleteNumber)
+
+    if(indexToDeleteNumber >= 0){
+      coordinates.splice(indexToDeleteNumber, 1);
       console.log('coordinates.length:', coordinates.length)
       await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
         this.showDeleteDialog(false);
         this.setState(()=>({indexToDelete: -1 }));
       }); 
-  // } 
+    }
+ 
     this.handleRefresh();
     //Alert.alert('You long-pressed the button! ! '+ id);
     //this.showDeleteDialog(false);
@@ -295,7 +300,7 @@ class SaveMap extends Component {
                     rightSubtitle = { moment(item.timeEnd-item.timeStart).format("HH:mm:ss") +', '+ item.distance +' km' }
                     subtitle = {item.locStart && item.locEnd  ? (item.locStart !== item.locEnd ? item.locStart +" - " + item.locEnd : item.locStart+"") : ""}
                     onPress  = {()=> this.props.navigation.navigate('ViewSaveMap',{name: item.trackName, item: item}) }
-                    onLongPress ={()=>{console.log("ala"); this.showDeleteDialog(true,1)}}
+                    onLongPress ={()=>{console.log("ala"); this.showDeleteDialog(true,item)}}
                     containerStyle={{borderRadius:0 ,borderWidth: 0, borderColor: '#777777',}}
                     subtitleStyle = {{fontSize:13}}
                     // titleStyle = {{fontSize:15}}
@@ -331,25 +336,6 @@ export default SaveMap;
 
 
 
-
-class MyListItem extends React.PureComponent {
-  _onPress = () => {
-    this.props.onPressItem(this.props.id);
-  };
-
-  render() {
-    const textColor = this.props.selected ? "red" : "black";
-    return (
-      <TouchableOpacity onPress={this._onPress}>
-        <View>
-          <Text style={{ color: textColor }}>
-            {this.props.title}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-}
 
 
 const styles = StyleSheet.create({
