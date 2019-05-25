@@ -13,10 +13,18 @@ class LoadingScreen extends Component {
             function(user){
             if(user){
                 console.log('userelo 320');
-                this.props.navigation.navigate('Map') ;
+                const MyexampleRegion = {
+                    latitude: 50.0713231,
+                    longitude: 19.9404102,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                  };
+                this.props.navigation.navigate('ViewSaveMap',{itemId: "86",
+                    exampleRegion: MyexampleRegion, }) ;
                 // console.log('user', user)
             }
             else{
+
                 this.props.navigation.navigate('LoginScreen');
             }
         }.bind(this)

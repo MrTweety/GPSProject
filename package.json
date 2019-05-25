@@ -14,7 +14,8 @@
     "react-native-elements": "^1.1.0",
     "react-native-paper": "^2.15.2",
     "react-navigation": "^3.6.1",
-    "react-navigation-material-bottom-tabs": "^1.0.0"
+    "react-navigation-material-bottom-tabs": "^1.0.0",
+    "rn-bottom-drawer": "^1.4.3"
   },
   "devDependencies": {
     "babel-preset-expo": "^5.0.0"

@@ -1,13 +1,17 @@
 import React, { Component, PropTypes} from 'react';
-import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView, RefreshControl  } from 'react-native';
+import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,
+  TouchableOpacity, PanResponder, Dimensions,Image, ScrollView, RefreshControl, FlatList , ActivityIndicator } from 'react-native';
+import {List, ListItem, SearchBar, } from 'react-native-elements';
 import {
     MapView,
 
   } from 'expo';
-
+  import moment from "moment";
+ 
   import MyItem from '../Explore/MyItems'
   import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
   import DialogInput from '../Explore/MyDialogImputs';
+// import { ActivityIndicator } from 'react-native-paper';
   // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -15,25 +19,22 @@ import {
   const LATITUDE_DELTA = 0.004;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-  //var id = 0;
+
   var coordinates = [];
 
 
-
-  function fetchData(){
-    var z =0;
-    for(let i =0;i<10000;++i){
-      z++;
-    }
-    //TODO: fetchData
-    return true;
-  }
-
-class MapScreen2 extends Component {
+class SaveMap extends Component {
   constructor(props) {
     super(props);
+    
     this.state = {
-      coordinatesMy:[],
+      data: [],
+      loading:true,
+      refreshing: false,
+      search: '',
+
+
+      coordinatesMy:coordinates,
       isDialogVisible_DeleteSaveRouteDecision: false,
       exampleRegion: {
           latitude: 50.0713231,
@@ -41,15 +42,18 @@ class MapScreen2 extends Component {
           latitudeDelta: LATITUDE_DELTA,
           longitudeDelta: LONGITUDE_DELTA
       },
-      refreshing: false,
+      
     };
+
+    //this.fetchData();
   }
 
 
 
 
       async componentWillUpdate(){
-        coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        // this.setState({data:coordinates,})
         // console.log(coordinates)
       }
       
@@ -73,6 +77,7 @@ class MapScreen2 extends Component {
         if(coordinates[0].coordinates.length>0){
           // console.log('kghkh')
           this.setState((state)=>({ 
+            data:coordinates,
             coordinates: coordinates,
             coordinatesMy: coordinates[0].coordinates ,
             exampleRegion:{
@@ -166,13 +171,20 @@ class MapScreen2 extends Component {
     coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
     // console.log('coordinates:', coordinates)
     console.log('coordinates.length:', coordinates.length)
-    const indexToDelete = this.setState;
-    coordinates.splice(indexToDelete, 1);
-    console.log('coordinates.length:', coordinates.length)
-    await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
-      this.showDeleteDialog(false);
-      this.setState(()=>({indexToDelete: -1 }));
-    });  
+    // const indexToDelete = this.state;//distaje TimeEND
+
+    // const indexToDeleteNumber = coordinates.indexOf(indexToDelete)
+    // console.log('indexToDeleteNumber:', indexToDeleteNumber)
+    //const indexToDelete = this.setState;
+    // if(indexToDeleteNumber >= 0){
+      coordinates.splice(1, 1);
+      console.log('coordinates.length:', coordinates.length)
+      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+        this.showDeleteDialog(false);
+        this.setState(()=>({indexToDelete: -1 }));
+      }); 
+  // } 
+    this.handleRefresh();
     //Alert.alert('You long-pressed the button! ! '+ id);
     //this.showDeleteDialog(false);
     //this.setState(()=>({indexToDelete: -1 }));
@@ -180,7 +192,9 @@ class MapScreen2 extends Component {
 
 
   showDeleteDialog(isShow, index = -1){
+    console.log("showDeleteDialog",isShow,index);
     if(index!=-1){
+
       this.setState(()=>({indexToDelete: index }));
     }
     this.setState({isDialogVisible_DeleteSaveRouteDecision: isShow});
@@ -188,17 +202,64 @@ class MapScreen2 extends Component {
   }
 
 
+  updateSearch = search => {
+    this.setState({ search });
+    
+        const newData = coordinates.filter(item =>{
+          console.log(item);
+          const itemData = `${item.distance} 
+          ${item.trackName.toUpperCase()} 
+          ${item.category.toUpperCase()}`;
+          const textData = search.toUpperCase();
+          return itemData.indexOf(textData) > -1;
+        }); 
+        
+    this.setState({ data: newData }); 
+  };
 
-  _onRefresh = () => {
-    this.setState({refreshing: true});
-    fetchData();
-    // .then(() => {
-    //   this.setState({refreshing: false});
-    // });
 
-    this.setState({refreshing: false});
-  }
 
+      renderSeparator = () => {
+        return(
+          <View style={{height:1, width:'86%', backgroundColor:'#CED0CD', marginLeft:'7%'}}/>
+        );
+      };
+
+      renderHeader = () => {
+        return(<SearchBar placeholder = "Type here..." onChangeText={this.updateSearch}
+        value={this.state.search} autoCorrect={false}  lightTheme round/>
+
+        );
+      };
+
+      renderFooter =() => {
+        if(this.state.loading)return null
+        return(
+          <View style={{paddingVertical:20,borderTopWidth:1, borderTopColor:'#CED0CD'}}>
+            <ActivityIndicator animating size='large'/>
+          </View>
+        );
+      };
+
+
+
+      handleRefresh = () =>{
+        this.setState({
+          refreshing: true,
+        },() => {
+          this.fetchData();
+        });
+      }
+
+     async fetchData(){
+        //for(let i =0;i<10000;)++i;
+        coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        
+        this.setState({
+          data:coordinates,
+          refreshing: false,
+        });
+      }
 
     render() {
 
@@ -209,115 +270,92 @@ class MapScreen2 extends Component {
           } = this.state;
 
 
-        return(
 
-        <View style={styles.container}>
-          <DialogInput 
-            isDialogVisible={this.state.isDialogVisible_DeleteSaveRouteDecision}
-            title={"Do you want to delete this track?"}
-            message={""}
-            textInputVisible = {false}
-            submitInput={ () => {this.deleteSaveRoute()} }
-            closeDialog={ () => {this.showDeleteDialog(false)}}
-            submitText={"Delete"}>
-          </DialogInput>
+          return (
 
-        <View style = {{flex:1, backgroundColor:'white', paddingTop:20, margin: 0}}>
-            <Text style={{ fontSize:18, fontWeight: '700', paddingHorizontal: 20}}>
-            Twoje Trasy:
-            </Text>
-            <View style = {{height:130, marginTop:20}}>
-                <ScrollView 
-                  refreshControl={
+            <View style={styles.container}>
+              <DialogInput 
+                isDialogVisible={this.state.isDialogVisible_DeleteSaveRouteDecision}
+                title={"Do you want to delete this track?"}
+                message={""}
+                textInputVisible = {false}
+                submitInput={ () => {this.deleteSaveRoute()} }
+                closeDialog={ () => {this.showDeleteDialog(false)}}
+                submitText={"Delete"}>
+              </DialogInput>
+
+              <FlatList
+                data={this.state.data.reverse()}
+                // renderItem={this.renderRow}
+                renderItem = {({ item }) => (
+                
+                <ListItem
+                    title = {item.trackName}
+                    rightTitle = {moment(item.timeEnd).format("DD-MM-YYYY")}
+                    rightSubtitle = { moment(item.timeEnd-item.timeStart).format("HH:mm:ss") +', '+ item.distance +' km' }
+                    subtitle = {item.locStart && item.locEnd  ? (item.locStart !== item.locEnd ? item.locStart +" - " + item.locEnd : item.locStart+"") : ""}
+                    onPress  = {()=> this.props.navigation.navigate('ViewSaveMap',{name: item.trackName, item: item}) }
+                    onLongPress ={()=>{console.log("ala"); this.showDeleteDialog(true,1)}}
+                    containerStyle={{borderRadius:0 ,borderWidth: 0, borderColor: '#777777',}}
+                    subtitleStyle = {{fontSize:13}}
+                    // titleStyle = {{fontSize:15}}
+                    rightSubtitleStyle = {{fontSize:13, width:screen.width/2, textAlign:'right' }}
+                    rightTitleStyle = {{fontSize:15}}
+                    chevronColor="black"
+                    chevron
+          
+                    />
+                    )}
+                keyExtractor = {item => item.timeEnd.toString(8)}
+                ItemSeparatorComponent = {this.renderSeparator}
+                ListHeaderComponent = {this.renderHeader}
+                ListFooterComponent = {this.renderFooter}
+                showsScroll = {false}
+                refreshControl={
                             <RefreshControl
                               refreshing={this.state.refreshing}
-                              onRefresh={this._onRefresh}
+                              onRefresh={this.handleRefresh}
                             />
                           }
-                  horizontal = {true}
-                  showsHorizontalScrollIndicator = {false}>
-
-                {
-                  coordinates.map((currentValue,index ) =>{
-                    {/* const latitude = myRoute.coordinates[0].latitude;
-                    const longitude = myRoute.coordinates[0].longitude;
-                    const latitudeDelta = LATITUDE_DELTA;
-                    const longitudeDelta = LONGITUDE_DELTA; */}
-
-                    
-                  return (
-                  <MyItem imageUri = {require('../assets/logo1.png')}
-                        text = {'trasa :' + currentValue.trackName} myOnPress = { ()=>this.updateMap(index)}  onLongPressButton = { ()=>this.showDeleteDialog(true,index)} key = {index}
-
-                        // myExampleRegion = {{
-                        //   latitude: latitude,
-                        //   longitude:longitude,
-                        //   latitudeDelta: latitudeDelta,
-                        //   longitudeDelta: longitudeDelta
-                        // }} 
-                        // myCoordinates = {myRoute.coordinates}
-                        />
-                  ); 
-
-                  })
-                  }
-
-                </ScrollView>
-            </View>
-
-
-            <View style={{ flex: 2, padding:20, paddingBottom:0, margin:0, justifyContent: 'center',}}>
-            {!!exampleRegion && (
-                <MapView
-                style={{ flex: 1}}
-                // region={exampleRegion}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                followUserLocation={true}
-                onRegionChange={this.onRegionChange.bind(this)}
-                initialRegion={exampleRegion}
-                provider="google"
-                ref={map => {
-                  this.map = map;
-                }}
-                >
-                            {coordinatesMy.length > 1 ? (
-              <MapView.Polyline
-                coordinates={coordinatesMy}
-                strokeColor="red" 
-                strokeWidth={4}
               />
-            ) : (
-              false
-            )}
-                
+              </View>
+
             
-            </MapView>
-            )}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble]} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble]} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
+          );
     }
 }
 
 
-export default MapScreen2;
+export default SaveMap;
+
+
+
+
+
+class MyListItem extends React.PureComponent {
+  _onPress = () => {
+    this.props.onPressItem(this.props.id);
+  };
+
+  render() {
+    const textColor = this.props.selected ? "red" : "black";
+    return (
+      <TouchableOpacity onPress={this._onPress}>
+        <View>
+          <Text style={{ color: textColor }}>
+            {this.props.title}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+}
 
 
 const styles = StyleSheet.create({
     container: {
       flex: 1,
       margin: 0,
-      backgroundColor:'blue',
       
     },
     bubble: {

@@ -31,6 +31,8 @@ import { NavigationEvents } from 'react-navigation';
 import { FontAwesome, MaterialIcons,Entypo } from '@expo/vector-icons';
 import moment from "moment";
 import DialogInput from '../Explore/MyDialogImputs';
+import geolocationService from '../Explore/geolocationService';
+
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
@@ -47,6 +49,7 @@ const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 
 import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY, STORAGE_KEY_USER_DISTANCE } from '../Explore/MyStorage.js'
 import haversine from '../Explore/MyHaversine'
+
 
 
 
@@ -92,6 +95,8 @@ export default class MapScreen extends React.Component {
   static navigationOptions = {
     title: 'Background location',
   };
+
+
 
   
   mapViewRef = React.createRef();
@@ -281,26 +286,42 @@ export default class MapScreen extends React.Component {
 
   async stopLocationSave() {
     // await AsyncStorage.removeItem(STORAGE_KEY_USER_ROUTERS);
+    const {savedLocations, timerStart, trackName, distance, category } = this.state;
 
-    if(this.state.savedLocations && this.state.savedLocations.length>1){
+    if(savedLocations && savedLocations.length>1){
 
     const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
 
-    savedRouters.push(...[
-      {
-        coordinates: this.state.savedLocations,
-        timeStart:this.state.timerStart , 
-        timeEnd: new Date().getTime(),
-        trackName: this.state.trackName,
-        distance: (this.state.distance).round(3),
-        category: this.state.category,
-      }]);
-    // console.log('savedRouters:', savedRouters)
-    // console.log('savedLocations:', this.state.savedLocations)
+    //TODO:zapis serwer
+
+
+
+
+    if(savedLocations){
+      console.log('savedLocations:', savedLocations)
+      
+      const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
+      let index = savedLocations[savedLocations.length-1];
+
+      const locEnd = await geolocationService.fetchNameInfo(index);
+
+      savedRouters.push(...[
+        {
+          coordinates: savedLocations,
+          timeStart: timerStart , 
+          timeEnd: new Date().getTime(),
+          trackName: trackName,
+          distance: (distance).round(3),
+          category: category,
+          locStart: locStart,
+          locEnd: locEnd,
+
+        }]);
+
+    }
+
     await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
-    // console.log('savedRouters:', savedRouters)
-    // console.log('stopLocationSave: zapisano')
-    // console.log('trackName:', this.state.trackName)
+   
   
   }
   }
@@ -551,6 +572,17 @@ stopTimer = () =>{
 }
 
   render() {
+
+    // const { navigation } = this.props;
+    // const itemId = navigation.getParam('itemId', -1);
+    // console.log('itemId:', itemId)
+    // const exampleRegion = navigation.getParam('exampleRegion', MyexampleRegion);
+    // console.log('exampleRegion:', exampleRegion)
+
+
+
+
+
 
     var timer = 0;
     this.state.isPause 
