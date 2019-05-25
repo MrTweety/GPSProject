@@ -1,95 +1,88 @@
 import React, { Component, PropTypes} from 'react';
-import {Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView } from 'react-native';
+import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,
+  TouchableOpacity, PanResponder, Dimensions,Image, ScrollView, RefreshControl, FlatList , ActivityIndicator } from 'react-native';
+import {List, ListItem, SearchBar, } from 'react-native-elements';
 import {
     MapView,
 
   } from 'expo';
-
+  import moment from "moment";
+ 
   import MyItem from '../Explore/MyItems'
-
-
-
+  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
+  import DialogInput from '../Explore/MyDialogImputs';
+// import { ActivityIndicator } from 'react-native-paper';
+  // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
 
-  const LATITUDE_DELTA = 0.0922;
+  const LATITUDE_DELTA = 0.004;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
-var coordinates = {
-  route: [
-    {  id: 0,
-      coordinates: [
-      { latitude: 50.0513231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 1,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 2,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 3,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 4,
-      coordinates: [
-      { latitude: 50.0113231, longitude: 19.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]},
-    {  id: 5,
-      coordinates: [
-      { latitude: 51.0113231, longitude: 20.9504102 },
-      { latitude: 50.0709, longitude: 19.9415 },
-      { latitude: 50.07205, longitude: 19.9429 },
-      { latitude: 50.0729, longitude: 19.94308 },
-      { latitude: 50.0532, longitude: 19.9619 },
-    ]}
-  ]
-};
+
+  var coordinates = [];
 
 
+class SaveMap extends Component {
+  constructor(props) {
+    super(props);
+    
+    this.state = {
+      data: [],
+      loading:true,
+      refreshing: false,
+      search: '',
 
-class MapScreen2 extends Component {
-    state = {
-        coordinatesMy:[],
 
-        exampleRegion: {
+      coordinatesMy:coordinates,
+      isDialogVisible_DeleteSaveRouteDecision: false,
+      exampleRegion: {
           latitude: 50.0713231,
           longitude: 19.9404102,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421
-        }
-      };
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA
+      },
+      
+    };
 
-      componentDidMount(){
+    //this.fetchData();
+  }
 
-        if(coordinates.route[0].coordinates){
+
+
+
+      async componentWillUpdate(){
+        // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        // this.setState({data:coordinates,})
+        // console.log(coordinates)
+      }
+      
+      async componentDidMount(){
+        coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        // console.log(coordinates)
+
+        // if(coordinates.route[0].coordinates){
+        //   this.setState((state)=>({ 
+        //     coordinatesMy: coordinates.route[0].coordinates ,
+        //     exampleRegion:{
+        //       latitude: coordinates.route[0].coordinates[0].latitude,
+        //       longitude: coordinates.route[0].coordinates[0].longitude,
+        //       latitudeDelta: LATITUDE_DELTA,
+        //       longitudeDelta: LONGITUDE_DELTA,
+
+        //     }
+        //   }));
+        // }
+
+        if(coordinates[0].coordinates.length>0){
+          // console.log('kghkh')
           this.setState((state)=>({ 
-            coordinatesMy: coordinates.route[0].coordinates ,
+            data:coordinates,
+            coordinates: coordinates,
+            coordinatesMy: coordinates[0].coordinates ,
             exampleRegion:{
-              latitude: coordinates.route[0].coordinates[0].latitude,
-              longitude: coordinates.route[0].coordinates[0].longitude,
+              latitude: coordinates[0].coordinates[0].latitude,
+              longitude: coordinates[0].coordinates[0].longitude,
               latitudeDelta: LATITUDE_DELTA,
               longitudeDelta: LONGITUDE_DELTA,
 
@@ -97,17 +90,19 @@ class MapScreen2 extends Component {
           }));
         }
 
+
+
       }
 
       updateMap = (id) => {
-      // console.log('id', id);
-      const latitude = coordinates.route[id].coordinates[0].latitude;
-      const longitude = coordinates.route[id].coordinates[0].longitude;
+      console.log('id', id);
+      const latitude = coordinates[id].coordinates[0].latitude;
+      const longitude = coordinates[id].coordinates[0].longitude;
       const latitudeDelta = this.state.exampleRegion.latitudeDelta;
       const longitudeDelta = this.state.exampleRegion.longitudeDelta;
 
       this.setState(()=>({ 
-        coordinatesMy: coordinates.route[id].coordinates ,
+        coordinatesMy: coordinates[id].coordinates ,
         exampleRegion:{
           latitude: latitude,
           longitude: longitude,
@@ -164,13 +159,112 @@ class MapScreen2 extends Component {
     onRegionChange(region, lastLat, lastLong) {
       this.setState({
         exampleRegion: region,
-           lastLat: lastLat || this.state.lastLat,
-           lastLong: lastLong || this.state.lastLong
+          lastLat: lastLat || this.state.lastLat,
+          lastLong: lastLong || this.state.lastLong
       });
   }
 
 
 
+  deleteSaveRoute =async () => {
+
+    coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    // console.log('coordinates:', coordinates)
+    console.log('coordinates.length:', coordinates.length)
+    const {indexToDelete} = this.state;//distaje TimeEND
+    console.log('indexToDelete:', indexToDelete)
+
+    const indexToDeleteNumber = coordinates.findIndex((element)=>{
+      console.log('element',element)
+      return element.timeEnd == indexToDelete.timeEnd;
+    });
+    console.log('indexToDeleteNumber:', indexToDeleteNumber)
+
+    if(indexToDeleteNumber >= 0){
+      coordinates.splice(indexToDeleteNumber, 1);
+      console.log('coordinates.length:', coordinates.length)
+      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+        this.showDeleteDialog(false);
+        this.setState(()=>({indexToDelete: -1 }));
+      }); 
+    }
+ 
+    this.handleRefresh();
+    //Alert.alert('You long-pressed the button! ! '+ id);
+    //this.showDeleteDialog(false);
+    //this.setState(()=>({indexToDelete: -1 }));
+  }
+
+
+  showDeleteDialog(isShow, index = -1){
+    console.log("showDeleteDialog",isShow,index);
+    if(index!=-1){
+
+      this.setState(()=>({indexToDelete: index }));
+    }
+    this.setState({isDialogVisible_DeleteSaveRouteDecision: isShow});
+
+  }
+
+
+  updateSearch = search => {
+    this.setState({ search });
+    
+        const newData = coordinates.filter(item =>{
+          console.log(item);
+          const itemData = `${item.distance} 
+          ${item.trackName.toUpperCase()} 
+          ${item.category.toUpperCase()}`;
+          const textData = search.toUpperCase();
+          return itemData.indexOf(textData) > -1;
+        }); 
+        
+    this.setState({ data: newData }); 
+  };
+
+
+
+      renderSeparator = () => {
+        return(
+          <View style={{height:1, width:'86%', backgroundColor:'#CED0CD', marginLeft:'7%'}}/>
+        );
+      };
+
+      renderHeader = () => {
+        return(<SearchBar placeholder = "Type here..." onChangeText={this.updateSearch}
+        value={this.state.search} autoCorrect={false}  lightTheme round/>
+
+        );
+      };
+
+      renderFooter =() => {
+        if(this.state.loading)return null
+        return(
+          <View style={{paddingVertical:20,borderTopWidth:1, borderTopColor:'#CED0CD'}}>
+            <ActivityIndicator animating size='large'/>
+          </View>
+        );
+      };
+
+
+
+      handleRefresh = () =>{
+        this.setState({
+          refreshing: true,
+        },() => {
+          this.fetchData();
+        });
+      }
+
+     async fetchData(){
+        //for(let i =0;i<10000;)++i;
+        coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        
+        this.setState({
+          data:coordinates,
+          refreshing: false,
+        });
+      }
 
     render() {
 
@@ -179,122 +273,90 @@ class MapScreen2 extends Component {
             coordinatesMy,
             exampleRegion
           } = this.state;
-          // console.log('exampleRegion:', exampleRegion)
-
-          // console.log('coordinates1:', coordinates1)
-          // console.log('coordinates:', coordinates.route[1].coordinates)
-          // console.log('coordinatesMy:', coordinatesMy)
 
 
 
-        return(
+          return (
 
-        <View style={styles.container}>
-        <View style = {{flex:1, backgroundColor:'white', paddingTop:20, margin: 0}}>
-            <Text style={{ fontSize:18, fontWeight: '700', paddingHorizontal: 20}}>
-            Twoje Trasy:
-            </Text>
-            <View style = {{height:130, marginTop:20}}>
-                <ScrollView 
-                horizontal = {true}
-                showsHorizontalScrollIndicator = {false}>
+            <View style={styles.container}>
+              <DialogInput 
+                isDialogVisible={this.state.isDialogVisible_DeleteSaveRouteDecision}
+                title={"Do you want to delete this track?"}
+                message={""}
+                textInputVisible = {false}
+                submitInput={ () => {this.deleteSaveRoute()} }
+                closeDialog={ () => {this.showDeleteDialog(false)}}
+                submitText={"Delete"}>
+              </DialogInput>
 
-                {
-                  coordinates.route.map((myRoute) =>{
-                    {/* const latitude = myRoute.coordinates[0].latitude;
-                    const longitude = myRoute.coordinates[0].longitude;
-                    const latitudeDelta = LATITUDE_DELTA;
-                    const longitudeDelta = LONGITUDE_DELTA; */}
-                    
-                  return (
-                  <MyItem imageUri = {require('../assets/logo1.png')}
-                        text = {'trasa '+(myRoute.id + 1)} myOnPress = { ()=>this.updateMap(myRoute.id)}  key = {myRoute.id}
-
-                        // myExampleRegion = {{
-                        //   latitude: latitude,
-                        //   longitude:longitude,
-                        //   latitudeDelta: latitudeDelta,
-                        //   longitudeDelta: longitudeDelta
-                        // }} 
-                        // myCoordinates = {myRoute.coordinates}
-                        />
-                  ); 
-
-                  })
-                  }
-
-                </ScrollView>
-            </View>
-
-
-            <View style={{ flex: 2, padding:20, paddingBottom:0, margin:0, justifyContent: 'center',}}>
-            {!!exampleRegion && (
-                <MapView
-                style={{ flex: 1}}
-                // region={exampleRegion}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                followUserLocation={true}
-                onRegionChange={this.onRegionChange.bind(this)}
-                initialRegion={exampleRegion}
-                provider="google"
-                ref={map => {
-                  this.map = map;
-                }}
-                >
-                            {coordinatesMy.length > 1 ? (
-              <MapView.Polyline
-                coordinates={coordinatesMy}
-                strokeColor="red" 
-                strokeWidth={4}
-              />
-            ) : (
-              false
-            )}
+              <FlatList
+                data={this.state.data.reverse()}
+                // renderItem={this.renderRow}
+                renderItem = {({ item }) => (
                 
+                <ListItem
+                    title = {item.trackName}
+                    rightTitle = {moment(item.timeEnd).format("DD-MM-YYYY")}
+                    rightSubtitle = { moment(item.timeEnd-item.timeStart).format("HH:mm:ss") +', '+ item.distance +' km' }
+                    subtitle = {item.locStart && item.locEnd  ? (item.locStart !== item.locEnd ? item.locStart +" - " + item.locEnd : item.locStart+"") : ""}
+                    onPress  = {()=> this.props.navigation.navigate('ViewSaveMap',{name: item.trackName, item: item}) }
+                    onLongPress ={()=>{console.log("ala"); this.showDeleteDialog(true,item)}}
+                    containerStyle={{borderRadius:0 ,borderWidth: 0, borderColor: '#777777',}}
+                    subtitleStyle = {{fontSize:13}}
+                    // titleStyle = {{fontSize:15}}
+                    rightSubtitleStyle = {{fontSize:13, width:screen.width/2, textAlign:'right' }}
+                    rightTitleStyle = {{fontSize:15}}
+                    chevronColor="black"
+                    chevron
+          
+                    />
+                    )}
+                keyExtractor = {item => item.timeEnd.toString(8)}
+                ItemSeparatorComponent = {this.renderSeparator}
+                ListHeaderComponent = {this.renderHeader}
+                ListFooterComponent = {this.renderFooter}
+                showsScroll = {false}
+                refreshControl={
+                            <RefreshControl
+                              refreshing={this.state.refreshing}
+                              onRefresh={this.handleRefresh}
+                            />
+                          }
+              />
+              </View>
+
             
-            </MapView>
-            )}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble, styles.button]} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble, styles.button]} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
+          );
     }
 }
 
 
-export default MapScreen2;
+export default SaveMap;
+
+
+
+
 
 
 const styles = StyleSheet.create({
     container: {
       flex: 1,
       margin: 0,
-      backgroundColor:'blue',
       
     },
     bubble: {
       backgroundColor: 'rgba(255,255,255,0.9)',
-      paddingHorizontal: 18,
-      paddingVertical: 12,
-      borderRadius: 20,
-    },
-
-    button: {
-      width: 60,
-      paddingHorizontal: 12,
-      alignItems: 'center',
+      width:50,
+      height:50,
+      borderRadius: 30,
       marginTop: 10,
       marginLeft: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize:25,
     },
+
+
 
     buttonContainer: {
       flexDirection: 'column',
