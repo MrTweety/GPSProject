@@ -11,6 +11,8 @@ import {
   AsyncStorage,
   AppState,
   PixelRatio,
+  TouchableOpacity,
+  Picker,
 
 } from 'react-native';
 import { Button } from 'react-native-elements';
@@ -28,6 +30,9 @@ import { EventEmitter, EventSubscription } from 'fbemitter';
 import { NavigationEvents } from 'react-navigation';
 import { FontAwesome, MaterialIcons,Entypo } from '@expo/vector-icons';
 import moment from "moment";
+import DialogInput from '../Explore/MyDialogImputs';
+import geolocationService from '../Explore/geolocationService';
+
 
 const screen = Dimensions.get('window');
 const ASPECT_RATIO = screen.width / screen.height;
@@ -44,6 +49,7 @@ const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 
 import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY, STORAGE_KEY_USER_DISTANCE } from '../Explore/MyStorage.js'
 import haversine from '../Explore/MyHaversine'
+
 
 
 
@@ -90,6 +96,8 @@ export default class MapScreen extends React.Component {
     title: 'Background location',
   };
 
+
+
   
   mapViewRef = React.createRef();
 
@@ -105,9 +113,16 @@ export default class MapScreen extends React.Component {
     timerDuration: 0,
     timerDurationNew: 0,
     distance: 0,
+    isDialogVisible_StopDecision: false,
+    isDialogVisible_DiscardDecision:false,
+    trackName: "Track name",
+    category: "B",
     translateX: new Animated.Value(screen.width-140),
     fadeAnim: new Animated.Value(0),
   };
+
+  
+
 
   keepAwakeActivate = () => {
     KeepAwake.activate();
@@ -242,14 +257,15 @@ export default class MapScreen extends React.Component {
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy,
       showsBackgroundLocationIndicator: this.state.showsBackgroundLocationIndicator,
-      deferredUpdatesInterval: 30 * 1000, // 30sec
-      deferredUpdatesDistance: 10, // 10 meters
+      // deferredUpdatesInterval: 30 * 1000, // 30sec
+      // deferredUpdatesDistance: 10, // 10 meters
+      timeInterval: 2500,
+      distanceInterval: 5,
       foregroundService: {
         notificationTitle: 'expo-location-demo',
         notificationBody: 'Background location is running...',
         notificationColor: '#463',
-      },
-      foregroundService:{}
+      }
     });
     // if (!this.state.isTracking) {
     //   alert(
@@ -270,21 +286,43 @@ export default class MapScreen extends React.Component {
 
   async stopLocationSave() {
     // await AsyncStorage.removeItem(STORAGE_KEY_USER_ROUTERS);
+    const {savedLocations, timerStart, trackName, distance, category } = this.state;
 
-    if(this.state.savedLocations && this.state.savedLocations.length>1){
+    if(savedLocations && savedLocations.length>1){
 
     const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-    console.log('savedRouters:', savedRouters)
 
-    savedRouters.push(...[
-      {
-        coordinates: this.state.savedLocations,
-        timeStart:this.state.timerStart , 
-        timeEnd: new Date().getTime()
-      }]);
-    // console.log('savedRouters:', savedRouters)
-    // console.log('savedLocations:', this.state.savedLocations)
+    //TODO:zapis serwer
+
+
+
+
+    if(savedLocations){
+      console.log('savedLocations:', savedLocations)
+      
+      const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
+      let index = savedLocations[savedLocations.length-1];
+
+      const locEnd = await geolocationService.fetchNameInfo(index);
+
+      savedRouters.push(...[
+        {
+          coordinates: savedLocations,
+          timeStart: timerStart , 
+          timeEnd: new Date().getTime(),
+          trackName: trackName,
+          distance: (distance).round(3),
+          category: category,
+          locStart: locStart,
+          locEnd: locEnd,
+
+        }]);
+
+    }
+
     await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
+   
+  
   }
   }
 
@@ -296,15 +334,62 @@ export default class MapScreen extends React.Component {
     this.setState({ savedLocations: [] });
   };
 
+  showSaveDialog(isShow){
+    this.setState({isDialogVisible_StopDecision: isShow});
+  }
+
+  stopAndSaveDialog(inputText){
+  
+    
+    this.setState({isDialogVisible_StopDecision: false,
+      trackName:inputText});
+
+      this.stopTracking(true);
+      // console.log("sendInput (DialogInput#1): "+inputText);
+  }
+
+
+  showDiscard(isShow){
+    this.setState({isDialogVisible_StopDecision: false});
+    this.setState({isDialogVisible_DiscardDecision: isShow});
+  }
+
+  discard(){
+    // console.log("discard");
+    this.stopTracking(false);
+    this.setState({isDialogVisible_DiscardDecision: false});
+  }
+
+  
+
+
+  stopTracking = async (save = true) => {
+
+    await this.stopLocationUpdates();
+    this.setState({ isTracking: false });
+    this.animatedToggleTracking();
+    if(save)
+      this.stopLocationSave();
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(STORAGE_KEY_USER_DISTANCE);
+    this.setState({ savedLocations: [], 
+      timerDuration: 0 }); 
+    
+
+  };
+
   toggleTracking = async () => {
 
 
     if (this.state.isTracking) {
-      await this.stopLocationUpdates();
-      this.setState({ isTracking: false });
-      this.stopLocationSave();
-      await AsyncStorage.removeItem(STORAGE_KEY);
-      await AsyncStorage.removeItem(STORAGE_KEY_USER_DISTANCE);
+      if(this.state.savedLocations && this.state.savedLocations.length>1){
+        this.showSaveDialog(true);
+        
+      }else{
+        this.stopTracking(false);
+        
+      }
+
 
     } else {
       await this.startLocationUpdates();
@@ -313,8 +398,8 @@ export default class MapScreen extends React.Component {
 
 
     this.animatedToggleTracking();
-    this.setState({ savedLocations: [], //TODO: czy na pewno czycić tu? 
-      timerDuration: 0 }); 
+    // this.setState({ savedLocations: [], //TODO: czy na pewno czycić tu? - nie xD 
+      // timerDuration: 0 }); 
   };
 
 
@@ -458,6 +543,8 @@ export default class MapScreen extends React.Component {
     );
   }
 
+
+
   setMapPadding = () => {
     const iosEdgePadding = { top: mapPaddingTop * 0.5, right: 0, bottom: mapPaddingBottom * 0.95, left: 0 };
     const androidEdgePadding = { top: PixelRatio.getPixelSizeForLayoutSize(screen.height * 0), right: 0, bottom: PixelRatio.getPixelSizeForLayoutSize(screen.height * 0.17), left: 0 };
@@ -485,6 +572,17 @@ stopTimer = () =>{
 }
 
   render() {
+
+    // const { navigation } = this.props;
+    // const itemId = navigation.getParam('itemId', -1);
+    // console.log('itemId:', itemId)
+    // const exampleRegion = navigation.getParam('exampleRegion', MyexampleRegion);
+    // console.log('exampleRegion:', exampleRegion)
+
+
+
+
+
 
     var timer = 0;
     this.state.isPause 
@@ -517,6 +615,7 @@ stopTimer = () =>{
             {this.renderPolyline()}
           </MapView>
         )}
+        
 
         <View style={styles.buttons} pointerEvents="box-none">
           <View style={styles.topButtons}>
@@ -600,19 +699,77 @@ stopTimer = () =>{
               onPress={this.toggleTracking}
             />
 
+            
+
           </View>
+          
         </View>
+        
       </View>
+      {/* {this.renderStopAction()} */}
+      <DialogInput 
+        isDialogVisible={this.state.isDialogVisible_StopDecision}
+        title={"Stop and save"}
+        message={"Track name"}
+        hintInput ={"Track name"}
+        initValueTextInput={"Track name"}
+        submitInput={ (inputText) => {this.stopAndSaveDialog(inputText)} }
+        closeDialog={ () => {this.showSaveDialog(false)}}
+        opcionalAction ={ () => {this.showDiscard(true)}}
+        opcionalTextVisible = {true}
+        cancelText={"Cancel"}
+        submitText={"SAVE"}
+        opcionalText={"DISCARD"}>
+          <Text 
+            style={{
+              fontSize: 16,
+              ...Platform.select({
+                ios: {
+                  textAlign:'center',
+                  marginBottom: 10,
+                },
+                android: {
+                  textAlign:'left',
+                  marginTop: 0
+                },
+              })
+          }}
+          >
+            Track category:
+          </Text>
+          <Picker
+            selectedValue={this.state.category}
+            style={{padding:10}}
+            onValueChange={(itemValue, itemIndex) =>
+              this.setState({category: itemValue})
+            }>
+            <Picker.Item label="A" value="A" />
+            <Picker.Item label="B" value="B" />
+            <Picker.Item label="B1" value="B1" />
+            <Picker.Item label="B2" value="B2" />
+            <Picker.Item label="C" value="C" />
+            <Picker.Item label="T" value="T" />
+            <Picker.Item label="A1" value="A1" />
+          </Picker>
+      </DialogInput>
+
+      <DialogInput isDialogVisible={this.state.isDialogVisible_DiscardDecision}
+        title={"Do you want to discard this track?"}
+        message={"Recording will be stopped."}
+        textInputVisible = {false}
+        submitInput={ () => {this.discard()} }
+        closeDialog={ () => {this.showDiscard(false)}}
+        submitText={"DISCARD"}>
+      </DialogInput>
+
       <View style={styles.mapDrawerOverlay} />
+      
     </View>
+
+    
     );
   }
 }
-
-
-var i = 1;
-
-
 
 
 TaskManager.defineTask(
@@ -630,14 +787,6 @@ TaskManager.defineTask(
         longitude: coords.longitude,
       }));
 
-// if(i){
-//   console.log('i: ', i);
-//   ++i;
-// }
-// console.log('i: ',i);
-
-      // console.log('myhaversine: ',haversine({latitude: locations[0].coords.latitude-0.3, longitude: locations[0].coords.longitude-0.3},newLocations[0],{unit:'km'}));
-
       console.log(`Received new locations at ${new Date()}:`, locations);
 
       endElement = savedLocations[savedLocations.length - 1];
@@ -648,7 +797,7 @@ TaskManager.defineTask(
       locationEventsEmitter.emit(taskEventName, savedLocations);
 
       const savedDistance= await getSavedLocations(STORAGE_KEY_USER_DISTANCE);
-      console.log('savedDistance:', savedDistance)
+      // console.log('savedDistance:', savedDistance)
       if(savedDistance == null || savedDistance.length == 0){
         
         distance = 0;

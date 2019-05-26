@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, Button, Image, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Button, Image, Dimensions, ScrollView,SafeAreaViewRN, TouchableOpacity} from 'react-native';
 import {DrawerActions , createSwitchNavigator,createStackNavigator, createBottomTabNavigator, createDrawerNavigator, createAppContainer,DrawerItems, SafeAreaView  } from 'react-navigation';
 import { createMaterialBottomTabNavigator } from "react-navigation-material-bottom-tabs";
 
@@ -9,10 +9,11 @@ import { Ionicons, Entypo, MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeScreen from './screens/HomeScreen';
 import LoginScreen from './screens/LoginScreen';
 import MapScreen from './screens/MapScreen';
-import MapScreen2 from './screens/SaveMap';
+import SaveMapScreen from './screens/SaveMap';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import LoadingScreen from './screens/LoadingScreen';
+import ViewSaveMapScreen from './screens/ViewSaveMap';
 
 import firebase  from  'firebase';
 import {firebaseConfig} from './config';
@@ -27,7 +28,10 @@ const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleuserc
 
 class App extends Component {
   render() {
-    return <AppContainer />;
+    // return <AppContainer />;
+    return(
+        <AppContainer />
+    )
   }
 };
 
@@ -48,7 +52,7 @@ _log_out = async () => {
 const CustomDrawerContentComponent  = (props) => (
   <SafeAreaView style = {{flex: 1}}>
     <View 
-    style={{ height:160, paddingTop:10, backgroundColor: '#0055ff', justifyContent:'center', alignItems:'center' }}>
+    style={{ height:160, paddingTop:10, backgroundColor: '#6b52ae', justifyContent:'center', alignItems:'center' }}>
       <Image onPress={()=>this.props.navigation.navigate('DrawerClose')}
           source={require('./assets/logo2_2.png')} 
           style ={{marginTop:30, marginBottom:20, height: 120, borderRadius:30,backgroundColor:'white' }}
@@ -65,9 +69,64 @@ const CustomDrawerContentComponent  = (props) => (
             <Text style={{color: "white"}}>Log in</Text> 
           </TouchableOpacity>  }
         </View>
+        <View style={{alignItems: 'center', paddingTop: 10}}>
+          <TouchableOpacity  onPress={()=>props.navigation.navigate('SaveMap')}  style={[styles.my_button, {backgroundColor: '#841584'}]} activeOpacity = {0.8}>
+            <Text style={{color: "white"}}>Learn More</Text> 
+          </TouchableOpacity>
+        </View>
     </ScrollView>
   </SafeAreaView>
 );
+
+/**************************************************************************/
+const SaveMapStack = createStackNavigator({
+  SaveMap:{screen: SaveMapScreen,
+    navigationOptions:({navigation})=>{
+      return{
+        headerTitle : "Recorded tracks",
+        headerRight:(
+          <Ionicons style = {{paddingRight: 10}}
+          onPress={()=>navigation.openDrawer()}
+          name="md-menu" size={30} />
+        ),
+      }
+    },
+    },
+  ViewSaveMap:{screen: ViewSaveMapScreen,
+    navigationOptions:({navigation})=>{
+      return{
+        //  headerTitle : navigation.state.params.name || null,
+        headerTitle: `${navigation.getParam('name', '')}`,
+        headerRight:(
+          <Ionicons style = {{paddingRight: 10}}
+          onPress={()=>navigation.openDrawer()}
+          name="md-menu" size={30} />
+        ),
+      }
+    },
+  
+  },
+
+},
+{
+  initialRouteName: 'SaveMap',
+  headerLayoutPreset: 'center',
+  defaultNavigationOptions: {
+    headerStyle: {
+      backgroundColor: '#6b52ae',
+      height: 40,
+      // justifyContent: 'center'
+    },
+    headerTintColor: '#fff',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
+  },
+}
+
+);
+
+/**************************************************************************/
 
 const DashboardTabNavigator = createMaterialBottomTabNavigator({
   Home:  {
@@ -77,8 +136,8 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
         tabBarColor: '#842655',
         tabBarIcon: ({ tintColor }) => <Ionicons name={"ios-home"} size={26} color={tintColor} />
     }},
-    Map2: {
-      screen: MapScreen2,
+    SaveMap: {
+      screen: SaveMapStack,
           navigationOptions: {
           tabBarLabel:"SaveMap",
           tabBarColor: '#1e1e1d',
@@ -110,6 +169,7 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
   navigationOptions: ({navigation})=>{
     const {routeName} = navigation.state.routes [navigation.state.index];
     return{
+      header:null,
       headerTitle: routeName
     };
   },
