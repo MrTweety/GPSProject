@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Text, View, Button, Image, Dimensions, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Button, Image, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
 import {DrawerActions , createSwitchNavigator,createStackNavigator, createBottomTabNavigator, createDrawerNavigator, createAppContainer,DrawerItems, SafeAreaView  } from 'react-navigation';
 import { createMaterialBottomTabNavigator } from "react-navigation-material-bottom-tabs";
 
@@ -17,9 +17,13 @@ import LoadingScreen from './screens/LoadingScreen';
 import firebase  from  'firebase';
 import {firebaseConfig} from './config';
 
+import Global from './globals.js';
+// import { GoogleAuthData } from 'expo-google-sign-in';
+
 firebase.initializeApp(firebaseConfig);
 const{width} = Dimensions.get('window');
 
+const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';
 
 class App extends Component {
   render() {
@@ -28,6 +32,18 @@ class App extends Component {
 };
 
 export default App;
+
+_log_out = async () => {
+  try{
+    if(Global.user_id != '')
+    {
+      let token = Global.user_accessToken;
+      alert(token);
+    }
+  }catch({message}){
+    console.error('Logout: error: '+ message);
+  }
+}
 
 const CustomDrawerContentComponent  = (props) => (
   <SafeAreaView style = {{flex: 1}}>
@@ -40,6 +56,15 @@ const CustomDrawerContentComponent  = (props) => (
     </View>
     <ScrollView>
       <DrawerItems {...props}/>
+        <View style={{alignItems: 'center', paddingTop: 10}}>
+        { Global.user_id ? 
+          <TouchableOpacity onPress = { () => this._log_out()} style={styles.my_button} activeOpacity = {0.8}>
+            <Text style={{color: "white"}}>Log out</Text> 
+          </TouchableOpacity> :
+          <TouchableOpacity onPress = {()=> props.navigation.navigate('LoginScreen')}  style={styles.my_button} activeOpacity = {0.8}>
+            <Text style={{color: "white"}}>Log in</Text> 
+          </TouchableOpacity>  }
+        </View>
     </ScrollView>
   </SafeAreaView>
 );
@@ -95,13 +120,9 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
    barStyle: { 
     backgroundColor: '#f2f2f2', 
     height:54,
-
-
    },
 
 });
-
-
 
 const DashboardStackNavigator = createStackNavigator({
   Dashboard: DashboardTabNavigator
@@ -118,14 +139,11 @@ const DashboardStackNavigator = createStackNavigator({
   }
 });
 
-
-
-
 const AppDrawerNavigator = createDrawerNavigator({
   LoginScreen : {
     screen: LoginScreen,
     navigationOptions: {
-      drawerLabel:"LoginScreen",
+      drawerLabel:"Login Screen",
       drawerIcon: ({ tintColor }) => <Entypo name={"login"} size={26} color={tintColor} />
     }
   },
@@ -163,4 +181,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  my_button:{
+    backgroundColor: '#d95333',
+    justifyContent:'center',
+    alignItems: 'center',
+    width: '95%',
+    borderRadius: 3,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height:5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 5
+  }
 });

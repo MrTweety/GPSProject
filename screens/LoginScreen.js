@@ -3,9 +3,22 @@ import { View, Text, StyleSheet, Button, Image, TouchableOpacity } from 'react-n
 import firebase  from  'firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+import Global from '../globals.js';
+
+const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';
 
 class LoginScreen extends Component { 
-  
+
+    // componentDidMount(){
+    //   if(Global.user_id != '')
+    //   {
+    //     this.props.navigation.navigate('Dashboard');
+    //   }
+    // }
+
+    // _test = async () =>{
+    //   Global.user_name = "test";
+    // }
 
      isUserEqual = (googleUser, firebaseUser) => {
         if (firebaseUser) {
@@ -57,14 +70,10 @@ class LoginScreen extends Component {
         }.bind(this));
       };
 
-
-
-
-
      signInWithGoogleAsync = async ()=>{
         try{
             
-            const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';//isoClientId
+            // const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';//isoClientId
 
              //const clientId = '173882404308-tsu3puci6ncdl08e9q4poqj6f0at0nv3.apps.googleusercontent.com'; //web
             const result = await Expo.Google.logInAsync({ clientId });
