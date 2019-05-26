@@ -9,17 +9,6 @@ const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleuserc
 
 class LoginScreen extends Component { 
 
-    // componentDidMount(){
-    //   if(Global.user_id != '')
-    //   {
-    //     this.props.navigation.navigate('Dashboard');
-    //   }
-    // }
-
-    // _test = async () =>{
-    //   Global.user_name = "test";
-    // }
-
      isUserEqual = (googleUser, firebaseUser) => {
         if (firebaseUser) {
           var providerData = firebaseUser.providerData;
@@ -53,6 +42,11 @@ class LoginScreen extends Component {
                 function(){
                 console.log('user signed in');
 
+                Global.user_id = googleUser.user.id;
+                Global.user_name = googleUser.user.name;
+                Global.user_accessToken = googleUser.accessToken;
+                alert(Global.user_id);
+
             })
             .catch(function(error) {
               // Handle Errors here.
@@ -79,7 +73,6 @@ class LoginScreen extends Component {
             const result = await Expo.Google.logInAsync({ clientId });
             if (result.type === 'success') {
                 clientId2 =clientId;
-                abc = result.accessToken;
 
                 this.onSignIn(result);
                 console.log(result.user);

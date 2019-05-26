@@ -41,8 +41,8 @@ _log_out = async () => {
   try{
     if(Global.user_id != '')
     {
-      let token = Global.user_accessToken;
-      alert(token);
+      firebase.auth().signOut();
+      Global.clear_all();
     }
   }catch({message}){
     console.error('Logout: error: '+ message);
@@ -200,13 +200,13 @@ const DashboardStackNavigator = createStackNavigator({
 });
 
 const AppDrawerNavigator = createDrawerNavigator({
-  LoginScreen : {
-    screen: LoginScreen,
-    navigationOptions: {
-      drawerLabel:"Login Screen",
-      drawerIcon: ({ tintColor }) => <Entypo name={"login"} size={26} color={tintColor} />
-    }
-  },
+  // LoginScreen : {
+  //   screen: LoginScreen,
+  //   navigationOptions: {
+  //     drawerLabel:"Login Screen",
+  //     drawerIcon: ({ tintColor }) => <Entypo name={"login"} size={26} color={tintColor} />
+  //   }
+  // },
   Dashboard : {
     screen: DashboardStackNavigator,
     navigationOptions: {
