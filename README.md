@@ -8,28 +8,32 @@
 - [fbemitter](https://github.com/facebook/emitter)
 
 ## Installation
-Create a working copy of a local repository by running the command
+### Create a working copy of a local repository by running the command
 ```sh
 git clone https://github.com/MrTweety/GPSProject.git
 cd GPSProject
 ```
-Install dependencies
+### Install dependencies
 ```sh
 npm install 
 ```
-Install the `react-navigation` package in your React Native project.
+### Install the `react-navigation` package in your React Native project.
 ```sh
 npm install --save react-navigation
 
 npm install react-navigation-material-bottom-tabs react-native-paper
 ```
-Install the `firebase` package in your React Native project.
-```sh
+### Install the `firebase` package in your React Native project.
+```sh 
 npm install --save firebase
-
+```
+### Install the `react-native-elements` package in your React Native project.
+```sh
 npm install --save react-native-elements
 ```
-Install the `react-navigation` package in your React Native project. 
+
+### Install the `rn-bottom-drawer` package in your React Native project.
+
 ~~npm install rn-bottom-drawer --save~~ 
 ~~git clone https://github.com/matinzd/rn-bottom-drawer.git node_modules/rn-bottom-drawer~~
 ```sh
