@@ -2,23 +2,15 @@ import React, { Component, PropTypes} from 'react';
 import {AsyncStorage, Alert, View, Text, Animated, StyleSheet,
   TouchableOpacity, PanResponder, Dimensions,Image, ScrollView, RefreshControl, FlatList , ActivityIndicator } from 'react-native';
 import {List, ListItem, SearchBar, } from 'react-native-elements';
-import {
-    MapView,
+import moment from "moment";
+import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
+import DialogInput from '../Explore/MyDialogImputs';
 
-  } from 'expo';
-  import moment from "moment";
- 
-  import MyItem from '../Explore/MyItems'
-  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
-  import DialogInput from '../Explore/MyDialogImputs';
-// import { ActivityIndicator } from 'react-native-paper';
-  // const STORAGE_KEY_USER_ROUTERS = 'USER_ROUTERS-storage';
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
 
   const LATITUDE_DELTA = 0.004;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-
 
   var coordinates = [];
 
@@ -26,6 +18,7 @@ import {
 class SaveMap extends Component {
   constructor(props) {
     super(props);
+    
     
     this.state = {
       data: [],
@@ -49,33 +42,20 @@ class SaveMap extends Component {
   }
 
 
-
-
-      async componentWillUpdate(){
-        // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-        // this.setState({data:coordinates,})
-        // console.log(coordinates)
-      }
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.navigation.state.params.refreshing) {
+      this.handleRefresh();
+    }
+  }
       
-      async componentDidMount(){
+  async componentDidMount(){
+        const { navigation } = this.props;
+        const refreshing = navigation.getParam('refreshing', false);
+        if(refreshing){this.handleRefresh()}
+
         coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-        // console.log(coordinates)
-
-        // if(coordinates.route[0].coordinates){
-        //   this.setState((state)=>({ 
-        //     coordinatesMy: coordinates.route[0].coordinates ,
-        //     exampleRegion:{
-        //       latitude: coordinates.route[0].coordinates[0].latitude,
-        //       longitude: coordinates.route[0].coordinates[0].longitude,
-        //       latitudeDelta: LATITUDE_DELTA,
-        //       longitudeDelta: LONGITUDE_DELTA,
-
-        //     }
-        //   }));
-        // }
 
         if(coordinates[0].coordinates.length>0){
-          // console.log('kghkh')
           this.setState((state)=>({ 
             data:coordinates,
             coordinates: coordinates,
@@ -89,100 +69,18 @@ class SaveMap extends Component {
             }
           }));
         }
-
-
-
       }
-
-      updateMap = (id) => {
-      console.log('id', id);
-      const latitude = coordinates[id].coordinates[0].latitude;
-      const longitude = coordinates[id].coordinates[0].longitude;
-      const latitudeDelta = this.state.exampleRegion.latitudeDelta;
-      const longitudeDelta = this.state.exampleRegion.longitudeDelta;
-
-      this.setState(()=>({ 
-        coordinatesMy: coordinates[id].coordinates ,
-        exampleRegion:{
-          latitude: latitude,
-          longitude: longitude,
-          latitudeDelta: latitudeDelta,
-          longitudeDelta: longitudeDelta,
-        }
-      }));
-      this.map.animateToRegion({
-        latitude,
-        longitude,
-        latitudeDelta,
-        longitudeDelta,
-      },1000);
-     }
-
-     onPressZoomIn() {
-      this.region = {
-        latitude: this.state.exampleRegion.latitude,
-        longitude: this.state.exampleRegion.longitude,
-        latitudeDelta: this.state.exampleRegion.latitudeDelta * 2,
-        longitudeDelta: this.state.exampleRegion.latitudeDelta * ASPECT_RATIO  * 2
-      }
-  
-      this.setState({
-        exampleRegion: {
-          latitudeDelta: this.region.latitudeDelta,
-          longitudeDelta: this.region.longitudeDelta,
-          latitude: this.region.latitude,
-          longitude: this.region.longitude
-        }
-      })
-      this.map.animateToRegion(this.region, 100);
-    }
-  
-     onPressZoomOut() {
-      region = {
-        latitude: this.state.exampleRegion.latitude,
-        longitude: this.state.exampleRegion.longitude,
-        latitudeDelta: this.state.exampleRegion.latitudeDelta / 2,
-        longitudeDelta: this.state.exampleRegion.latitudeDelta * ASPECT_RATIO / 2
-      }
-  
-      this.setState({
-        exampleRegion: {
-          latitudeDelta: region.latitudeDelta,
-          longitudeDelta: region.longitudeDelta,
-          latitude: region.latitude,
-          longitude: region.longitude
-        }
-      })
-      this.map.animateToRegion(region, 100);
-    }
-
-    onRegionChange(region, lastLat, lastLong) {
-      this.setState({
-        exampleRegion: region,
-          lastLat: lastLat || this.state.lastLat,
-          lastLong: lastLong || this.state.lastLong
-      });
-  }
-
-
 
   deleteSaveRoute =async () => {
 
     coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-    // console.log('coordinates:', coordinates)
-    console.log('coordinates.length:', coordinates.length)
-    const {indexToDelete} = this.state;//distaje TimeEND
-    console.log('indexToDelete:', indexToDelete)
-
+    const {indexToDelete} = this.state;
     const indexToDeleteNumber = coordinates.findIndex((element)=>{
-      console.log('element',element)
       return element.timeEnd == indexToDelete.timeEnd;
     });
-    console.log('indexToDeleteNumber:', indexToDeleteNumber)
 
     if(indexToDeleteNumber >= 0){
       coordinates.splice(indexToDeleteNumber, 1);
-      console.log('coordinates.length:', coordinates.length)
       await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
         this.showDeleteDialog(false);
         this.setState(()=>({indexToDelete: -1 }));
@@ -190,9 +88,6 @@ class SaveMap extends Component {
     }
  
     this.handleRefresh();
-    //Alert.alert('You long-pressed the button! ! '+ id);
-    //this.showDeleteDialog(false);
-    //this.setState(()=>({indexToDelete: -1 }));
   }
 
 
@@ -256,10 +151,8 @@ class SaveMap extends Component {
         });
       }
 
-     async fetchData(){
-        //for(let i =0;i<10000;)++i;
+    async fetchData(){
         coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-        
         this.setState({
           data:coordinates,
           refreshing: false,
@@ -267,14 +160,10 @@ class SaveMap extends Component {
       }
 
     render() {
-
-
           const {
             coordinatesMy,
             exampleRegion
           } = this.state;
-
-
 
           return (
 
@@ -299,7 +188,7 @@ class SaveMap extends Component {
                     rightTitle = {moment(item.timeEnd).format("DD-MM-YYYY")}
                     rightSubtitle = { moment(item.timeEnd-item.timeStart).format("HH:mm:ss") +', '+ item.distance +' km' }
                     subtitle = {item.locStart && item.locEnd  ? (item.locStart !== item.locEnd ? item.locStart +" - " + item.locEnd : item.locStart+"") : ""}
-                    onPress  = {()=> this.props.navigation.navigate('ViewSaveMap',{name: item.trackName, item: item}) }
+                    onPress  = {()=> this.props.navigation.navigate('ViewSaveMap',{name: item.trackName, item: item,}) }
                     onLongPress ={()=>{console.log("ala"); this.showDeleteDialog(true,item)}}
                     containerStyle={{borderRadius:0 ,borderWidth: 0, borderColor: '#777777',}}
                     subtitleStyle = {{fontSize:13}}
@@ -365,9 +254,7 @@ const styles = StyleSheet.create({
       flex: 1,
       position: 'absolute',
       bottom: 0,
-    // left: 0,
-    // right: 0,
-    // backgroundColor: 'white',
+
     padding: 20,
     },
   
