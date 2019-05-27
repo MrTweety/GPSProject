@@ -149,13 +149,11 @@ export default class MapScreen extends React.Component {
     if (response !== 'granted') {
       AppState.addEventListener('change', this.handleAppStateChange);
       this.setState({
-        // tslint:disable-next-line max-line-length
+
         error:
           'Location permissions are required in order to use this feature. You can manually enable them at any time in the "Location Services" section of the Settings app.',
       });
 
-      // alert('error: Location permissions are required in order to use this feature. You can manually enable them at any time in the "Location Services" section of the Settings app.',
-      // );
       return;
     } else {
       this.setState({ error: undefined });
@@ -192,9 +190,6 @@ export default class MapScreen extends React.Component {
           }
         );
 
-        if (!isTracking) {
-          // alert('Click `Start tracking` to start getting location updates.');
-        }
 
         this.setState({
           accuracy,
@@ -257,8 +252,6 @@ export default class MapScreen extends React.Component {
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy,
       showsBackgroundLocationIndicator: this.state.showsBackgroundLocationIndicator,
-      // deferredUpdatesInterval: 30 * 1000, // 30sec
-      // deferredUpdatesDistance: 10, // 10 meters
       timeInterval: 2500,
       distanceInterval: 5,
       foregroundService: {
@@ -267,25 +260,17 @@ export default class MapScreen extends React.Component {
         notificationColor: '#463',
       }
     });
-    // if (!this.state.isTracking) {
-    //   alert(
-    //     // tslint:disable-next-line max-line-length
-    //     'Now you can send app to the background, go somewhere and come back here! You can even terminate the app and it will be woken up when the new significant location change comes out.'
-    //   );
-    // }
-    // this.setState({ isTracking: true });
+
     this.startTimer();
   }
 
   async stopLocationUpdates() {
     this.keepAwakeDeactivate();
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    // this.setState({ isTracking: false });
     this.stopTimer();
   }
 
   async stopLocationSave() {
-    // await AsyncStorage.removeItem(STORAGE_KEY_USER_ROUTERS);
     const {savedLocations, timerStart, trackName, distance, category } = this.state;
 
     if(savedLocations && savedLocations.length>1){
@@ -321,8 +306,6 @@ export default class MapScreen extends React.Component {
     }
 
     await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
-   
-  
   }
   }
 
@@ -339,13 +322,9 @@ export default class MapScreen extends React.Component {
   }
 
   stopAndSaveDialog(inputText){
-  
-    
     this.setState({isDialogVisible_StopDecision: false,
       trackName:inputText});
-
       this.stopTracking(true);
-      // console.log("sendInput (DialogInput#1): "+inputText);
   }
 
 
@@ -398,8 +377,6 @@ export default class MapScreen extends React.Component {
 
 
     this.animatedToggleTracking();
-    // this.setState({ savedLocations: [], //TODO: czy na pewno czycić tu? - nie xD 
-      // timerDuration: 0 }); 
   };
 
 
@@ -534,7 +511,6 @@ export default class MapScreen extends React.Component {
     }
     this.onCenterMap();
     return (
-      // @ts-ignore
       <MapView.Polyline
         coordinates={savedLocations}
         strokeWidth={3}
@@ -559,30 +535,14 @@ startTimer = () =>{
     timerNow: timerNow,
   });
   this.timer = setInterval(()=> {
-    // if(this.state.isTracking)
       this.setState({ timerNow: new Date().getTime() })
   },1000)
 }
 stopTimer = () =>{
-  // this.setState({
-  //   timerStart: 0,
-  //   timerNow: 0,
-  // });
   clearInterval(this.timer);
 }
 
   render() {
-
-    // const { navigation } = this.props;
-    // const itemId = navigation.getParam('itemId', -1);
-    // console.log('itemId:', itemId)
-    // const exampleRegion = navigation.getParam('exampleRegion', MyexampleRegion);
-    // console.log('exampleRegion:', exampleRegion)
-
-
-
-
-
 
     var timer = 0;
     this.state.isPause 
@@ -590,7 +550,6 @@ stopTimer = () =>{
     : timer = this.state.timerNow - this.state.timerStart + this.state.timerDurationNew
 
     this.state.isTracking ? this.animatedToggleTracking() : null;
-    // this.animatedToggleTracking() ;
 
     const translateX = this.state.translateX;
     return (
@@ -602,10 +561,9 @@ stopTimer = () =>{
         {!!exampleRegion && (
           <MapView
             style={{ flex: 1 }}
-            // mapPadding={this.setMapPadding()} //Goolge label 
             legalLabelInsets={{bottom:200}}
             showsUserLocation={true}
-            showsMyLocationButton={true}
+            showsMyLocationButton={false}
             showsScale={true}
             ref={this.mapViewRef}
             initialRegion={this.state.initialRegion}
@@ -655,12 +613,6 @@ stopTimer = () =>{
           
 
           <View style={styles.bottomButtons}>
-            {/* <Button
-              title="Clear Locations"
-              buttonStyle={[styles.bubble]}
-              titleStyle ={{color: COLOR_BUTTON_TEXT}}
-              onPress={this.clearLocations}
-            /> */}
             {this.state.isTracking || 1
             ?
             <Animated.View style={{flexDirection: 'row',opacity: this.state.fadeAnim, transform: [{translateX}]}}>
@@ -698,15 +650,10 @@ stopTimer = () =>{
               iconLeft
               onPress={this.toggleTracking}
             />
-
-            
-
-          </View>
-          
+          </View>  
         </View>
-        
       </View>
-      {/* {this.renderStopAction()} */}
+
       <DialogInput 
         isDialogVisible={this.state.isDialogVisible_StopDecision}
         title={"Stop and save"}
@@ -790,14 +737,13 @@ TaskManager.defineTask(
       console.log(`Received new locations at ${new Date()}:`, locations);
 
       endElement = savedLocations[savedLocations.length - 1];
-      // console.log('endElement:', endElement)
 
       savedLocations.push(...newLocations);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(savedLocations));  
       locationEventsEmitter.emit(taskEventName, savedLocations);
 
       const savedDistance= await getSavedLocations(STORAGE_KEY_USER_DISTANCE);
-      // console.log('savedDistance:', savedDistance)
+
       if(savedDistance == null || savedDistance.length == 0){
         
         distance = 0;

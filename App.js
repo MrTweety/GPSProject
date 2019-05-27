@@ -62,24 +62,13 @@ const SaveMapStack = createStackNavigator({
         headerRight:(
           <Ionicons style = {{paddingRight: 10}}
           onPress={()=>navigation.openDrawer()}
-          name="md-menu" size={30} />
+          name="md-menu" size={30} color="white"/>
         ),
       }
     },
     },
   ViewSaveMap:{screen: ViewSaveMapScreen,
-    navigationOptions:({navigation})=>{
-      return{
-        //  headerTitle : navigation.state.params.name || null,
-        headerTitle: `${navigation.getParam('name', '')}`,
-        headerRight:(
-          <Ionicons style = {{paddingRight: 10}}
-          onPress={()=>navigation.openDrawer()}
-          name="md-menu" size={30} />
-        ),
-      }
-    },
-  
+    // navigationOptions in ViewSaveMap.js
   },
 
 },
@@ -145,7 +134,15 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
     const {routeName} = navigation.state.routes [navigation.state.index];
     return{
       header:null,
-      headerTitle: routeName
+      headerTitle: routeName,
+      // tabBarOnPress: ({previousScene,scene, jumpToIndex}) => {
+      //   if(previousScene.index==2){
+
+      //   }else{
+      //   console.log('onPress:', scene.route);
+      //   jumpToIndex(scene.index);
+      // }
+      // }
     };
   },
   shifting: false, //Color for the tab bar when the tab corresponding to the screen is active. Used for the ripple effect. This is only supported when shifting is true.

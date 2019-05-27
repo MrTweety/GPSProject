@@ -7,10 +7,10 @@ import {
   import moment from "moment";
   import BottomDrawer from 'rn-bottom-drawer';
   import { DataTable } from 'react-native-paper'
-  import { Ionicons} from '@expo/vector-icons';
+  import { Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 
-  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
   import DialogInput from '../Explore/MyDialogImputs';
+  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
 
 
   const screen = Dimensions.get('window');
@@ -29,9 +29,8 @@ class ViewSaveMap extends Component {
     const { navigation } = this.props;
     const name = navigation.getParam('name', -1);
     const item = navigation.getParam('item', 0);
-
-
-
+    // navigation.setParams({ deleteThis: this.showDeleteDialog(true,2) });
+    
     this.state = {
       coordinatesMy:[],
       isDialogVisible_DeleteSaveRouteDecision: false,
@@ -48,8 +47,78 @@ class ViewSaveMap extends Component {
   }
 
 
+  static navigationOptions = ({ navigation }) => {
+    return {
+      headerTitle: `${navigation.getParam('name', '')}`,
+      headerRight:(
+        <View style={{flexDirection: 'row'}} >
+          <MaterialCommunityIcons style = {{paddingRight: 10}}
+            onPress={navigation.getParam('deleteThis')}
+            name="delete" size={30} color="white"/>
 
-     onPressZoomIn() {
+          <Ionicons style = {{paddingRight: 10}}
+            onPress={()=>navigation.openDrawer()}
+            name="md-menu" size={30} color="white"/>
+        </View>
+      ),
+    };
+  };
+
+  
+
+  componentDidMount() {
+    this.props.navigation.setParams({ deleteThis: this.showDeleteDialog});
+  }
+
+
+  showDeleteDialog = ()=>{
+    const {item} = this.state ;
+    console.log("showDeleteDialog",item);
+    if(item != 0){
+      this.setState(()=>({indexToDelete: item }));
+    }
+    this.setState({isDialogVisible_DeleteSaveRouteDecision: true});
+
+  }
+
+  hideDeleteDialog = () =>{
+    this.setState({isDialogVisible_DeleteSaveRouteDecision: false});
+  }
+
+
+
+  deleteSaveRoute =async () => {
+
+    coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    console.log('coordinates.length:', coordinates.length)
+    const {indexToDelete} = this.state;
+    console.log('indexToDelete:', indexToDelete)
+
+    const indexToDeleteNumber = coordinates.findIndex((element)=>{
+      console.log('element',element)
+      return element.timeEnd == indexToDelete.timeEnd;
+    });
+    console.log('indexToDeleteNumber:', indexToDeleteNumber)
+
+    if(indexToDeleteNumber >= 0){
+      coordinates.splice(indexToDeleteNumber, 1);
+      console.log('coordinates.length:', coordinates.length)
+      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+        this.hideDeleteDialog();
+        this.setState(()=>({indexToDelete: -1 }));
+      }); 
+    }
+    else{
+      this.hideDeleteDialog();
+    }
+
+    this.props.navigation.navigate('SaveMap',{refreshing:true});
+  }
+
+
+
+
+    onPressZoomIn() {
       this.region = {
         latitude: this.state.exampleRegion.latitude,
         longitude: this.state.exampleRegion.longitude,
@@ -68,7 +137,7 @@ class ViewSaveMap extends Component {
       this.map.animateToRegion(this.region, 100);
     }
   
-     onPressZoomOut() {
+    onPressZoomOut() {
       region = {
         latitude: this.state.exampleRegion.latitude,
         longitude: this.state.exampleRegion.longitude,
@@ -103,23 +172,16 @@ class ViewSaveMap extends Component {
             coordinatesMy,
           } = this.state;
 
-
         return(
 
         <View style={styles.container}>
-
-        
-
-
-
             <View style={{ flex: 1, padding:0, paddingBottom:0, margin:0, justifyContent: 'center',}}>
             {!!exampleRegion && (
                 <MapView
                 style={{ flex: 1}}
-                // region={exampleRegion}
                 showsUserLocation={true}
-                showsMyLocationButton={true}
-                followUserLocation={true}
+                showsMyLocationButton={false}
+                followUserLocation={false}
                 onRegionChange={this.onRegionChange.bind(this)}
                 initialRegion={exampleRegion}
                 provider="google"
@@ -136,10 +198,10 @@ class ViewSaveMap extends Component {
             ) : (
               false
             )}
-                
-            
+
             </MapView>
             )}
+
             <View style={styles.buttonContainer}>
               <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble]} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
@@ -147,22 +209,34 @@ class ViewSaveMap extends Component {
               <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble]} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
               </TouchableOpacity>
+
             </View>
+
         </View>
         <BottomDrawer ref={ref => this.drawer = ref}
         containerHeight={2*screen.height/3 }
         offset={42}
         startUp={false}
         backgroundColor={'#fcf8e3'}
-        onExpanded = {() => {this.setState({position:'UpPosition'})}}
-        onCollapsed = {() => {this.setState({position:'DownPosition'}) }}
+        onExpanded = {() => {console.log("    onExpanded function"); this.setState({position:'UpPosition'})}}
+        onCollapsed = {() => {console.log("    onCollapsed function"); this.setState({position:'DownPosition'}) }}
       >
       {this.renderContent()}
       </BottomDrawer>
 
+      <DialogInput 
+                isDialogVisible={this.state.isDialogVisible_DeleteSaveRouteDecision}
+                title={"Do you want to delete this track?"}
+                message={""}
+                textInputVisible = {false}
+                submitInput={ () => {this.deleteSaveRoute()} }
+                closeDialog={ () => {this.hideDeleteDialog()}}
+                submitText={"Delete"}>
+      </DialogInput>
+
 
       </View>
-    );
+    ); 
     }
 
 
@@ -258,7 +332,7 @@ const styles = StyleSheet.create({
       position: 'absolute',
       bottom: 0,
     // left: 0,
-    // right: 0,
+    right: 0,
     // backgroundColor: 'white',
     padding: 10,
     marginBottom:50,

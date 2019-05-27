@@ -31,7 +31,7 @@ npm install --save react-native-elements
 ```
 Install the `react-navigation` package in your React Native project. 
 ~~npm install rn-bottom-drawer --save~~ 
-
+~~git clone https://github.com/matinzd/rn-bottom-drawer.git node_modules/rn-bottom-drawer~~
 ```sh
-git clone https://github.com/matinzd/rn-bottom-drawer.git node_modules/rn-bottom-drawer
+git clone https://github.com/MrTweety/rn-bottom-drawer.git node_modules/rn-bottom-drawer
 ```
