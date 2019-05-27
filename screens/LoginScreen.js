@@ -45,7 +45,7 @@ class LoginScreen extends Component {
                 Global.user_id = googleUser.user.id;
                 Global.user_name = googleUser.user.name;
                 Global.user_accessToken = googleUser.accessToken;
-                alert(Global.user_id);
+                // alert(Global.user_accessToken);
 
             })
             .catch(function(error) {

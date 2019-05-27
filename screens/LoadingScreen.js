@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator } from 'react-native';
 
- import firebase  from  'firebase';
+import firebase  from  'firebase';
+
+import Global from '../globals.js';
 
 class LoadingScreen extends Component {
     componentDidMount(){
@@ -18,7 +20,12 @@ class LoadingScreen extends Component {
                     longitude: 19.9404102,
                     latitudeDelta: 0.0922,
                     longitudeDelta: 0.0421,
+
                   };
+                  console.log('Loading Screen user data:', user);
+                  Global.user_id = user.providerData[0].uid;
+                  Global.user_name = user.providerData[0].displayName;
+                //   Global.user_accessToken = user.accessToken;
                 this.props.navigation.navigate('Map') ;
                 // console.log('user', user)
             }
