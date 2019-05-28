@@ -249,6 +249,7 @@ export default class MapScreen extends React.Component {
 
   async startLocationUpdates(accuracy = this.state.accuracy) {
     this.keepAwakeActivate();
+    this.onCenterMap();
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
       accuracy,
       showsBackgroundLocationIndicator: this.state.showsBackgroundLocationIndicator,
@@ -283,20 +284,67 @@ export default class MapScreen extends React.Component {
 
 
     if(savedLocations){
-      console.log('savedLocations:', savedLocations)
+      // console.log('savedLocations:', savedLocations)
       
       const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
       let index = savedLocations[savedLocations.length-1];
 
       const locEnd = await geolocationService.fetchNameInfo(index);
 
+
+    let response = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes', {
+        method: 'POST',
+        body: JSON.stringify({
+          route: {
+            user_id: 20101010,
+            exam_start: new Date(timerStart).toISOString(), 
+            exam_end: new Date().toISOString(),
+            name: trackName,
+            length: (distance).round(3),
+            category: category
+        }
+        }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+      });
+
+      let responseJSON = await response.json();
+      console.log('responseJSON:', responseJSON)
+      let route_id = responseJSON.data.id;
+      console.log('route_id:', route_id)
+
+      let responseCord = await fetch('https://agile-mountain-75806.herokuapp.com/api/points', {
+        method: 'POST',
+        body: JSON.stringify({
+            points: savedLocations,
+            route_id: route_id, 
+        }),
+        headers: {
+            'Content-Type': 'application/json',
+        },
+      });
+      let responseCordJSON = await responseCord.json();
+      console.log('responseCord:', responseCord)
+      console.log('responseCordJSON:', responseCordJSON)
+
+
+
+
+
+      
+
+
+
       savedRouters.push(...[
         {
           coordinates: savedLocations,
-          timeStart: timerStart , 
-          timeEnd: new Date().getTime(),
-          trackName: trackName,
-          distance: (distance).round(3),
+          exam_start: new Date(timerStart).toISOString(), 
+          exam_end: new Date().toISOString(),
+          // timeStart: moment(timerStart).format('YYYY-MM-DD HH:mm:ss') , 
+          // timeEnd: moment().format('YYYY-MM-DD HH:mm:ss'),
+          name: trackName,
+          length: (distance).round(3),
           category: category,
           locStart: locStart,
           locEnd: locEnd,
@@ -465,7 +513,7 @@ export default class MapScreen extends React.Component {
         }
       } else {
         ++count;
-        if (count > 3) {
+        if (count > 1) {
           clearInterval(getLoc);
           Alert.alert(
             'Location',
@@ -734,7 +782,7 @@ TaskManager.defineTask(
         longitude: coords.longitude,
       }));
 
-      console.log(`Received new locations at ${new Date()}:`, locations);
+      // console.log(`Received new locations at ${new Date()}:`, locations);
 
       endElement = savedLocations[savedLocations.length - 1];
 
@@ -750,7 +798,7 @@ TaskManager.defineTask(
       }
       else
       {
-        console.log('myhaversine: ',haversine(endElement,newLocations[0],{unit:'km'}));
+        // console.log('myhaversine: ',haversine(endElement,newLocations[0],{unit:'km'}));
 
         distance = parseFloat(savedDistance) + haversine(endElement,newLocations[0],{unit:'km'});
       }
