@@ -98,7 +98,7 @@ class SaveMap extends Component {
           return itemData.indexOf(textData) > -1;
         }); 
         
-    this.setState({ data: newData }); 
+    this.setState({ data: newData.reverse() }); 
   };
 
 
@@ -136,8 +136,8 @@ class SaveMap extends Component {
       }
 
     async fetchData(){
-
-      let data = await fetch('https://agile-mountain-75806.herokuapp.com/api/user/'+'20101010'+'/routes', {
+      let url = 'https://agile-mountain-75806.herokuapp.com/api/user/'+'20101010'+'/routes'
+      let data = await fetch(url, {
         method: 'GET',
       });
       let dataJSON = await data.json();
