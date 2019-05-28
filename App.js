@@ -58,6 +58,20 @@ const CustomDrawerContentComponent  = (props) => (
           style ={{marginTop:30, marginBottom:20, height: 120, borderRadius:30,backgroundColor:'white' }}
            />
     </View>
+    {Global.user_id != '' &&
+      <View style={{paddingTop: 5, justifyContent:'center', alignItems:'center'}}>
+        <Image  
+          source = {{
+            uri: Global.user_photo.toString(),
+            method: 'POST',
+            headers: {Pragma: 'no-cache' },
+            body: 'elo',
+          }}
+          style ={{width: 60, height: 60, borderRadius: 60 / 2}}
+        />
+        <Text>{Global.user_name}</Text>
+      </View>
+    }
     <ScrollView>
       <DrawerItems {...props}/>
         <View style={{alignItems: 'center', paddingTop: 10}}>

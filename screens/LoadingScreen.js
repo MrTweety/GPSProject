@@ -25,9 +25,9 @@ class LoadingScreen extends Component {
                   console.log('Loading Screen user data:', user);
                   Global.user_id = user.providerData[0].uid;
                   Global.user_name = user.providerData[0].displayName;
-                //   Global.user_accessToken = user.accessToken;
-                this.props.navigation.navigate('Map') ;
-                // console.log('user', user)
+                  Global.user_photo = user.photoURL;
+                  console.log('User photo url:   ', Global.user_photo);
+                  this.props.navigation.navigate('Map') ;
             }
             else{
 
@@ -43,7 +43,7 @@ class LoadingScreen extends Component {
             <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
                 <ActivityIndicator size='large' />
             </View>
-            
+
           );
     }
 
