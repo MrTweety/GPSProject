@@ -278,25 +278,20 @@ export default class MapScreen extends React.Component {
 
     const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
 
-    //TODO:zapis serwer
-
-
-
-
     if(savedLocations){
       // console.log('savedLocations:', savedLocations)
       
-      const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
-      let index = savedLocations[savedLocations.length-1];
+      // const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
+      // let index = savedLocations[savedLocations.length-1];
 
-      const locEnd = await geolocationService.fetchNameInfo(index);
+      // const locEnd = await geolocationService.fetchNameInfo(index);
 
 
     let response = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes', {
         method: 'POST',
         body: JSON.stringify({
           route: {
-            user_id: 20101010,
+            user_id: '20101010',
             exam_start: new Date(timerStart).toISOString(), 
             exam_end: new Date().toISOString(),
             name: trackName,
@@ -310,9 +305,9 @@ export default class MapScreen extends React.Component {
       });
 
       let responseJSON = await response.json();
-      console.log('responseJSON:', responseJSON)
+      // console.log('responseJSON:', responseJSON)
       let route_id = responseJSON.data.id;
-      console.log('route_id:', route_id)
+      // console.log('route_id:', route_id)
 
       let responseCord = await fetch('https://agile-mountain-75806.herokuapp.com/api/points', {
         method: 'POST',
@@ -325,29 +320,19 @@ export default class MapScreen extends React.Component {
         },
       });
       let responseCordJSON = await responseCord.json();
-      console.log('responseCord:', responseCord)
-      console.log('responseCordJSON:', responseCordJSON)
-
-
-
-
-
-      
-
-
+      // console.log('responseCord:', responseCord)
+      // console.log('responseCordJSON:', responseCordJSON)
 
       savedRouters.push(...[
         {
-          coordinates: savedLocations,
-          exam_start: new Date(timerStart).toISOString(), 
-          exam_end: new Date().toISOString(),
-          // timeStart: moment(timerStart).format('YYYY-MM-DD HH:mm:ss') , 
-          // timeEnd: moment().format('YYYY-MM-DD HH:mm:ss'),
+          points: savedLocations,
+          start_datetime: new Date(timerStart).toISOString(), 
+          end_datetime: new Date().toISOString(),
           name: trackName,
           length: (distance).round(3),
           category: category,
-          locStart: locStart,
-          locEnd: locEnd,
+          // locStart: locStart,
+          // locEnd: locEnd,
 
         }]);
 

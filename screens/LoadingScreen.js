@@ -19,7 +19,7 @@ class LoadingScreen extends Component {
                     latitudeDelta: 0.0922,
                     longitudeDelta: 0.0421,
                   };
-                this.props.navigation.navigate('ViewSaveMap') ;
+                this.props.navigation.navigate('Map') ;
                 // console.log('user', user)
             }
             else{

@@ -11,14 +11,13 @@ import {
 
   import DialogInput from '../Explore/MyDialogImputs';
   import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
-
+  import geolocationService from '../Explore/geolocationService';
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
 
   const LATITUDE_DELTA = 0.04;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-
 
 class ViewSaveMap extends Component {
 
@@ -35,10 +34,10 @@ class ViewSaveMap extends Component {
       coordinatesMy:[],
       isDialogVisible_DeleteSaveRouteDecision: false,
       item:item,
-      coordinatesMy: (item == [] ? [] : item.coordinates ),
+      coordinatesMy: (item == [] ? [] : item.points ),
       exampleRegion: {
-          latitude: (item == [] ? 50.0713231 : item.coordinates[0].latitude ),
-          longitude:(item == [] ? 19.9404102 : item.coordinates[0].longitude ),
+          latitude: (item == [] ? 50.0713231 : item.points[0].latitude ),
+          longitude:(item == [] ? 19.9404102 : item.points[0].longitude ),
           latitudeDelta: LATITUDE_DELTA,
           longitudeDelta: LONGITUDE_DELTA
       },
@@ -67,6 +66,7 @@ class ViewSaveMap extends Component {
   
 
   componentDidMount() {
+    this.getLocationName();
     this.props.navigation.setParams({ deleteThis: this.showDeleteDialog});
   }
 
@@ -96,7 +96,7 @@ class ViewSaveMap extends Component {
 
     const indexToDeleteNumber = coordinates.findIndex((element)=>{
       console.log('element',element)
-      return element.timeEnd == indexToDelete.timeEnd;
+      return element.id == indexToDelete.id;
     });
     console.log('indexToDeleteNumber:', indexToDeleteNumber)
 
@@ -164,6 +164,20 @@ class ViewSaveMap extends Component {
       });
   }
 
+  getLocationName = async () => {
+    const {
+      coordinatesMy,
+    } = this.state;
+
+    const locStart = await geolocationService.fetchNameInfo(coordinatesMy[0]);
+          let index = coordinatesMy[coordinatesMy.length-1];
+          const locEnd = await geolocationService.fetchNameInfo(index);
+          this.setState({
+            locStart:locStart,
+            locEnd:locEnd
+          })
+  }
+
 
     render() {
 
@@ -171,6 +185,8 @@ class ViewSaveMap extends Component {
             exampleRegion,
             coordinatesMy,
           } = this.state;
+
+          
 
         return(
 
@@ -260,22 +276,22 @@ class ViewSaveMap extends Component {
             <DataTable>
               <DataTable.Row style={{backgroundColor: '#d9edf7'}}>
                 <DataTable.Cell>Distance</DataTable.Cell>
-                <DataTable.Cell numeric>{item.distance} km</DataTable.Cell>
+                <DataTable.Cell numeric>{item.length} km</DataTable.Cell>
               </DataTable.Row>
 
               <DataTable.Row style={{backgroundColor: '#fcf8e3'}}>
                 <DataTable.Cell>Duration</DataTable.Cell>
-                <DataTable.Cell numeric>{moment(item.timeEnd-item.timeStart).format("HH:mm:ss")}</DataTable.Cell>
+                <DataTable.Cell numeric>{moment((new Date(item.end_datetime))-(new Date(item.start_datetime))).format("HH:mm:ss")}</DataTable.Cell>
               </DataTable.Row>
 
               <DataTable.Row style={{backgroundColor: '#d9edf7'}}>
                 <DataTable.Cell>From</DataTable.Cell>
-                <DataTable.Cell numeric>{item.locStart}</DataTable.Cell>
+                <DataTable.Cell numeric>{this.state.locStart}</DataTable.Cell>
               </DataTable.Row>
 
               <DataTable.Row style={{backgroundColor: '#fcf8e3', borderBottomWidth:0}}>
                 <DataTable.Cell>To</DataTable.Cell>
-                <DataTable.Cell  numeric>{item.locEnd}</DataTable.Cell>
+                <DataTable.Cell  numeric>{this.state.locEnd}</DataTable.Cell>
               </DataTable.Row>
             </DataTable>
 
