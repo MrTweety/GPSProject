@@ -49,7 +49,7 @@ const COLOR_BUTTON_TEXT = 'rgba(0,0,0,0.7)';
 
 import {getSavedLocations, STORAGE_KEY_USER_ROUTERS, STORAGE_KEY, STORAGE_KEY_USER_DISTANCE } from '../Explore/MyStorage.js'
 import haversine from '../Explore/MyHaversine'
-
+import Global from '../globals.js';
 
 
 
@@ -291,7 +291,7 @@ export default class MapScreen extends React.Component {
         method: 'POST',
         body: JSON.stringify({
           route: {
-            user_id: '20101010',
+            user_id: Global.user_id,
             exam_start: new Date(timerStart).toISOString(), 
             exam_end: new Date().toISOString(),
             name: trackName,
@@ -792,7 +792,6 @@ TaskManager.defineTask(
     }
   }
 );
-
 
 const styles = StyleSheet.create({
   container: {

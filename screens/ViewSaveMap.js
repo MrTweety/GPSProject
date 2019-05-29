@@ -12,6 +12,7 @@ import {
   import DialogInput from '../Explore/MyDialogImputs';
   import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
   import geolocationService from '../Explore/geolocationService';
+  import Global from '../globals.js';
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -115,8 +116,7 @@ class ViewSaveMap extends Component {
     this.props.navigation.navigate('SaveMap',{refreshing:true});
   }
 
-
-
+  
 
     onPressZoomIn() {
       this.region = {

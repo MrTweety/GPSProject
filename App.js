@@ -49,6 +49,7 @@ _log_out = async () => {
   }
 }
 
+
 const CustomDrawerContentComponent  = (props) => (
   <SafeAreaView style = {{flex: 1}}>
     <View 

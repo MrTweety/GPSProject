@@ -26,10 +26,12 @@ class HomeScreen extends Component {
                         </Text>
                     </View>
                 </View>
+                <Text>elo</Text>
             </View>
         );
     }
 }
+
 
 export default HomeScreen;
 
