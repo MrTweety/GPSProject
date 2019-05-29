@@ -226,7 +226,8 @@ const AppDrawerNavigator = createDrawerNavigator({
       drawerIcon: ({ tintColor }) => <Entypo name={"map"} size={26} color={tintColor} />
     }
   }
-},{
+},
+{
   drawerPosition: 'right', //Default is left
   contentComponent: CustomDrawerContentComponent,
   drawerWidth: (4*width/5),

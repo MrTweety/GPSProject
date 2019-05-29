@@ -28,6 +28,7 @@ class HomeScreen extends Component {
                     </View>
                 </View>
             </View>
+            
             </ImageBackground>
         );
     }

@@ -20,7 +20,6 @@ class SaveMap extends Component {
   constructor(props) {
     super(props);
     
-    
     this.state = {
       data: [],
       loading:true,
@@ -28,8 +27,6 @@ class SaveMap extends Component {
       search: '',
       isDialogVisible_DeleteSaveRouteDecision: false,
     };
-
-    //this.fetchData();
   }
 
 
@@ -43,47 +40,45 @@ class SaveMap extends Component {
         const { navigation } = this.props;
         const refreshing = navigation.getParam('refreshing', false);
         if(refreshing){this.handleRefresh()}
-
-        // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-        // console.log('coordinates:', coordinates)
-
-        // if(coordinates[0].coordinates.length>0){
-        //   this.setState((state)=>({ 
-        //     data:coordinates,
-        //     coordinates: coordinates,
-        //   }));
-        // }
         this.fetchData();
       }
 
   deleteSaveRoute =async () => {
-
-    coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-    const {indexToDelete} = this.state;
-    const indexToDeleteNumber = coordinates.findIndex((element)=>{
-      return element.end_datetime == indexToDelete.end_datetime;
-    });
-
-    if(indexToDeleteNumber >= 0){
-      coordinates.splice(indexToDeleteNumber, 1);
-      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
-        this.showDeleteDialog(false);
-        this.setState(()=>({indexToDelete: -1 }));
-      }); 
+    const {itemToDelete} = this.state;
+    if(itemToDelete && itemToDelete != -1){
+      let itemToDeleteID = itemToDelete.id;
+      if(itemToDeleteID){
+        let url = `https://agile-mountain-75806.herokuapp.com/api/routes/${itemToDeleteID}`
+        let response = await fetch(url, {
+          method: 'DELETE',
+        });        
+      }
     }
- 
+
+
+    // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    
+    // const indexToDeleteNumber = coordinates.findIndex((element)=>{
+    //   return element.end_datetime == itemToDelete.end_datetime;
+    // });
+
+    // if(indexToDeleteNumber >= 0){
+    //   coordinates.splice(indexToDeleteNumber, 1);
+    //   await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+    //     this.showDeleteDialog(false);
+    //     this.setState(()=>({itemToDelete: -1 }));
+    //   }); 
+    // }
+    this.showDeleteDialog(false);
     this.handleRefresh();
   }
 
 
-  showDeleteDialog(isShow, index = -1){
-    console.log("showDeleteDialog",isShow,index);
-    if(index!=-1){
-
-      this.setState(()=>({indexToDelete: index }));
+  showDeleteDialog(isShow, item = -1){
+    if(item!=-1){
+      this.setState(()=>({itemToDelete: item }));
     }
     this.setState({isDialogVisible_DeleteSaveRouteDecision: isShow});
-
   }
 
 
@@ -91,7 +86,6 @@ class SaveMap extends Component {
     this.setState({ search });
     
         const newData = coordinates.filter(item =>{
-          console.log(item);
           const itemData = `${item.length} 
           ${item.name.toUpperCase()} 
           ${item.category.toUpperCase()}`;
@@ -99,7 +93,7 @@ class SaveMap extends Component {
           return itemData.indexOf(textData) > -1;
         }); 
         
-    this.setState({ data: newData }); 
+    this.setState({ data: newData}); 
   };
 
 
@@ -144,15 +138,12 @@ class SaveMap extends Component {
         method: 'GET',
       });
       let dataJSON = await data.json();
-      // console.log('data:', data)
-      // console.log('dataJSON:', dataJSON)
-      // console.log('dataJSON:', dataJSON.data)
+
       coordinates = dataJSON.data;
       // coordinates2 = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-        // console.log('coordinates:', coordinates2)
+      // console.log('coordinates:', coordinates2)
         this.setState({
-          data:coordinates,
-          coordinates: coordinates,
+          data:coordinates.reverse(),
           refreshing: false,
         });
       }
@@ -175,7 +166,7 @@ class SaveMap extends Component {
               </DialogInput>
 
               <FlatList
-                data={this.state.data.reverse()}
+                data={this.state.data}
                 // renderItem={this.renderRow}
                 renderItem = {({ item }) => (
                 

@@ -74,9 +74,8 @@ class ViewSaveMap extends Component {
 
   showDeleteDialog = ()=>{
     const {item} = this.state ;
-    console.log("showDeleteDialog",item);
     if(item != 0){
-      this.setState(()=>({indexToDelete: item }));
+      this.setState(()=>({itemToDelete: item }));
     }
     this.setState({isDialogVisible_DeleteSaveRouteDecision: true});
 
@@ -89,30 +88,41 @@ class ViewSaveMap extends Component {
 
 
   deleteSaveRoute =async () => {
-
-    coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-    console.log('coordinates.length:', coordinates.length)
-    const {indexToDelete} = this.state;
-    console.log('indexToDelete:', indexToDelete)
-
-    const indexToDeleteNumber = coordinates.findIndex((element)=>{
-      console.log('element',element)
-      return element.id == indexToDelete.id;
-    });
-    console.log('indexToDeleteNumber:', indexToDeleteNumber)
-
-    if(indexToDeleteNumber >= 0){
-      coordinates.splice(indexToDeleteNumber, 1);
-      console.log('coordinates.length:', coordinates.length)
-      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
-        this.hideDeleteDialog();
-        this.setState(()=>({indexToDelete: -1 }));
-      }); 
-    }
-    else{
-      this.hideDeleteDialog();
+    const {itemToDelete} = this.state;
+    if(itemToDelete && itemToDelete != -1){
+      let itemToDeleteID = itemToDelete.id;
+      if(itemToDeleteID){
+        let url = `https://agile-mountain-75806.herokuapp.com/api/routes/${itemToDeleteID}`
+        let response = await fetch(url, {
+          method: 'DELETE',
+        });
+        
+      }
     }
 
+    // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    // console.log('coordinates.length:', coordinates.length)
+    // const {itemToDelete} = this.state;
+    // console.log('itemToDelete:', itemToDelete)
+
+    // const indexToDeleteNumber = coordinates.findIndex((element)=>{
+    //   console.log('element',element)
+    //   return element.id == itemToDelete.id;
+    // });
+    // console.log('indexToDeleteNumber:', indexToDeleteNumber)
+
+    // if(indexToDeleteNumber >= 0){
+    //   coordinates.splice(indexToDeleteNumber, 1);
+    //   console.log('coordinates.length:', coordinates.length)
+    //   await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+    //     this.hideDeleteDialog();
+    //     this.setState(()=>({itemToDelete: -1 }));
+    //   }); 
+    // }
+    // else{
+    //   this.hideDeleteDialog();
+    // }
+    this.hideDeleteDialog();
     this.props.navigation.navigate('SaveMap',{refreshing:true});
   }
 
@@ -181,10 +191,10 @@ class ViewSaveMap extends Component {
 
     render() {
 
-          const {
-            exampleRegion,
-            coordinatesMy,
-          } = this.state;
+    const {
+      exampleRegion,
+      coordinatesMy,
+    } = this.state;
 
           
 
@@ -193,7 +203,7 @@ class ViewSaveMap extends Component {
         <View style={styles.container}>
             <View style={{ flex: 1, padding:0, paddingBottom:0, margin:0, justifyContent: 'center',}}>
             {!!exampleRegion && (
-                <MapView
+              <MapView
                 style={{ flex: 1}}
                 showsUserLocation={true}
                 showsMyLocationButton={false}
@@ -204,18 +214,17 @@ class ViewSaveMap extends Component {
                 ref={map => {
                   this.map = map;
                 }}
-                >
-                            {coordinatesMy.length > 1 ? (
-              <MapView.Polyline
-                coordinates={coordinatesMy}
-                strokeColor="red" 
-                strokeWidth={4}
-              />
-            ) : (
-              false
-            )}
-
-            </MapView>
+              >
+                {coordinatesMy.length > 1 ? (
+                  <MapView.Polyline
+                    coordinates={coordinatesMy}
+                    strokeColor="red" 
+                    strokeWidth={4}
+                  />
+                  ) : (
+                    false
+                  )}
+              </MapView>
             )}
 
             <View style={styles.buttonContainer}>
@@ -234,8 +243,8 @@ class ViewSaveMap extends Component {
         offset={42}
         startUp={false}
         backgroundColor={'#fcf8e3'}
-        onExpanded = {() => {console.log("    onExpanded function"); this.setState({position:'UpPosition'})}}
-        onCollapsed = {() => {console.log("    onCollapsed function"); this.setState({position:'DownPosition'}) }}
+        onExpanded = {() => {this.setState({position:'UpPosition'})}}
+        onCollapsed = {() => {this.setState({position:'DownPosition'})}}
       >
       {this.renderContent()}
       </BottomDrawer>
@@ -349,7 +358,6 @@ const styles = StyleSheet.create({
       bottom: 0,
     // left: 0,
     right: 0,
-    // backgroundColor: 'white',
     padding: 10,
     marginBottom:50,
     },

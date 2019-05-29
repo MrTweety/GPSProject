@@ -47,16 +47,9 @@ class SettingsScreen extends Component {
         }),
         headers: {
             'Content-Type': 'application/json',
-            // 'Content-Type': 'application/x-www-form-urlencoded',
+
         },
       })
-
-
-
-        console.log('abc:', abc)
-        // console.log( moment(new Date().getTime()).format("YYYY-DD-MM HH:mm:ss"));
-        // console.log( moment().format('YYYY-DD-MM HH:mm:ss'));
-        
     }
 
     getDat= async() =>{
@@ -68,23 +61,35 @@ class SettingsScreen extends Component {
           console.log('abcd:', abcd);
     }
 
-
+    DeleteDat= async() =>{
+        let abc = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes/2', {
+            method: 'DELETE',
+          });
+          
+          console.log('abc:', abc);
+        //   let abcd = await abc.json();
+        //   console.log('abcd:', abcd);
+    }
 
 
     render() {
         return (
             <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
                 <Text>This is the SettingsScreen</Text>
+                <TouchableOpacity onPress = {()=>this.fetchcos()} >
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>routes</Text>
+              </TouchableOpacity>
+              <Text>{'\n'}</Text>
                 <TouchableOpacity onPress = {()=>this.fetchId()} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>points</Text>
               </TouchableOpacity>
               <Text>{'\n'}</Text>
-              <TouchableOpacity onPress = {()=>this.fetchcos()} >
-                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>routes</Text>
-              </TouchableOpacity>
-              <Text>{'\n'}</Text>
               <TouchableOpacity onPress = {()=>this.getDat()} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>getDat</Text>
+              </TouchableOpacity>
+              <Text>{'\n'}</Text>
+              <TouchableOpacity onPress = {()=>this.DeleteDat()} >
+                <Text style={{ fontSize: 20, fontWeight: 'bold' }}>DeleteDat</Text>
               </TouchableOpacity>
             </View>      
         );
