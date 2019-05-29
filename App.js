@@ -85,7 +85,7 @@ const CustomDrawerContentComponent  = (props) => (
           </TouchableOpacity>  }
         </View>
         <View style={{alignItems: 'center', paddingTop: 10}}>
-          <TouchableOpacity  onPress={()=>props.navigation.navigate('SaveMap')}  style={[styles.my_button, {backgroundColor: '#841584'}]} activeOpacity = {0.8}>
+          <TouchableOpacity  onPress={()=>props.navigation.navigate('Home')}  style={[styles.my_button, {backgroundColor: '#841584'}]} activeOpacity = {0.8}>
             <Text style={{color: "white"}}>Learn More</Text> 
           </TouchableOpacity>
         </View>
