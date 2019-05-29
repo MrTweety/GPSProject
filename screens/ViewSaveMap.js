@@ -92,36 +92,26 @@ class ViewSaveMap extends Component {
     if(itemToDelete && itemToDelete != -1){
       let itemToDeleteID = itemToDelete.id;
       if(itemToDeleteID){
-        let url = `https://agile-mountain-75806.herokuapp.com/api/routes/${itemToDeleteID}`
-        let response = await fetch(url, {
-          method: 'DELETE',
-        });
-        
+        if(Global.user_id !=''){
+          let url = `https://agile-mountain-75806.herokuapp.com/api/routes/${itemToDeleteID}`
+          let response = await fetch(url, {
+            method: 'DELETE',
+          });
+        }
+        else{
+          var memory = STORAGE_KEY_USER_ROUTERS+'ghost';
+          coordinates = await getSavedLocations(memory);
+          const indexToDeleteNumber = coordinates.findIndex((element)=>{
+            return element.id == itemToDeleteID;
+          });
+          if(indexToDeleteNumber >= 0){
+            coordinates.splice(indexToDeleteNumber, 1);
+            await AsyncStorage.setItem(memory, JSON.stringify(coordinates));
+          }
+        }
       }
     }
 
-    // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-    // console.log('coordinates.length:', coordinates.length)
-    // const {itemToDelete} = this.state;
-    // console.log('itemToDelete:', itemToDelete)
-
-    // const indexToDeleteNumber = coordinates.findIndex((element)=>{
-    //   console.log('element',element)
-    //   return element.id == itemToDelete.id;
-    // });
-    // console.log('indexToDeleteNumber:', indexToDeleteNumber)
-
-    // if(indexToDeleteNumber >= 0){
-    //   coordinates.splice(indexToDeleteNumber, 1);
-    //   console.log('coordinates.length:', coordinates.length)
-    //   await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
-    //     this.hideDeleteDialog();
-    //     this.setState(()=>({itemToDelete: -1 }));
-    //   }); 
-    // }
-    // else{
-    //   this.hideDeleteDialog();
-    // }
     this.hideDeleteDialog();
     this.props.navigation.navigate('SaveMap',{refreshing:true});
   }

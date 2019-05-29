@@ -154,20 +154,20 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
           tabBarColor: '#ff3838',
           tabBarIcon: ({ tintColor }) => <Ionicons name={"md-map"} size={26} color={tintColor} />
       }}, 
-  Profile: {
-    screen: ProfileScreen,
-        navigationOptions: {
-        tabBarLabel:"Profile",
-        tabBarColor: 'yellow',
-        tabBarIcon: ({ tintColor }) => <Ionicons name={"md-person"} size={26} color={tintColor} />
-    }}, 
-    Settings: {
-      screen: SettingsScreen,
-          navigationOptions: {
-          tabBarLabel:"Settings",
-          tabBarColor: '#00ff38',
-          tabBarIcon: ({ tintColor }) => <Ionicons name={"ios-settings"} size={26} color={tintColor} />
-      }}, 
+  // Profile: {
+  //   screen: ProfileScreen,
+  //       navigationOptions: {
+  //       tabBarLabel:"Profile",
+  //       tabBarColor: 'yellow',
+  //       tabBarIcon: ({ tintColor }) => <Ionicons name={"md-person"} size={26} color={tintColor} />
+  //   }}, 
+  //   Settings: {
+  //     screen: SettingsScreen,
+  //         navigationOptions: {
+  //         tabBarLabel:"Settings",
+  //         tabBarColor: '#00ff38',
+  //         tabBarIcon: ({ tintColor }) => <Ionicons name={"ios-settings"} size={26} color={tintColor} />
+  //     }}, 
 },{
   initialRouteName: 'Map',
   navigationOptions: ({navigation})=>{
@@ -212,13 +212,13 @@ const DashboardStackNavigator = createStackNavigator({
 });
 
 const AppDrawerNavigator = createDrawerNavigator({
-  // LoginScreen : {
-  //   screen: LoginScreen,
-  //   navigationOptions: {
-  //     drawerLabel:"Login Screen",
-  //     drawerIcon: ({ tintColor }) => <Entypo name={"login"} size={26} color={tintColor} />
-  //   }
-  // },
+  LoginScreen : {
+    screen: LoginScreen,
+    navigationOptions: {
+      drawerLabel:() => null,
+      drawerIcon: () => null,
+    }
+  },
   Dashboard : {
     screen: DashboardStackNavigator,
     navigationOptions: {

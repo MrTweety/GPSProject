@@ -247,7 +247,6 @@ export default class MapScreen extends React.Component {
     if (this.eventSubscriptionDistance) {
       this.eventSubscriptionDistance.remove();
     }
-
     AppState.removeEventListener('change', this.handleAppStateChange);
   }
 
@@ -278,49 +277,59 @@ export default class MapScreen extends React.Component {
   async stopLocationSave() {
     // try {
       const {savedLocations, timerStart, trackName, distance, category } = this.state;
-
+      
       if(savedLocations && savedLocations.length>1){
 
-      const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        if(Global.user_id !=''){
+          var savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+        }
+          
+        else{
+          var memory = STORAGE_KEY_USER_ROUTERS+'ghost';
+          var savedRouters = await getSavedLocations(memory);
+        }
+      // const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
 
-      if(savedLocations){
         // const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
         // let index = savedLocations[savedLocations.length-1];
         // const locEnd = await geolocationService.fetchNameInfo(index);
+        if(Global.user_id !=''){
+          let response = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes', {
+              method: 'POST',
+              body: JSON.stringify({
+                route: {
+                  user_id: Global.user_id,
+                  exam_start: new Date(timerStart).toISOString(), 
+                  exam_end: new Date().toISOString(),
+                  name: trackName,
+                  length: (distance).round(3),
+                  category: category
+              }
+              }),
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+            });
 
-      let response = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes', {
-          method: 'POST',
-          body: JSON.stringify({
-            route: {
-              user_id: Global.user_id,
-              exam_start: new Date(timerStart).toISOString(), 
-              exam_end: new Date().toISOString(),
-              name: trackName,
-              length: (distance).round(3),
-              category: category
-          }
-          }),
-          headers: {
-              'Content-Type': 'application/json',
-          },
-        });
+          let responseJSON = await response.json();
+          var route_id = responseJSON.data.id;
+          let responseCord = await fetch('https://agile-mountain-75806.herokuapp.com/api/points', {
+            method: 'POST',
+            body: JSON.stringify({
+                points: savedLocations,
+                route_id: route_id, 
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+          });
+          // let responseCordJSON = await responseCord.json();
+      }
 
-        let responseJSON = await response.json();
-        let route_id = responseJSON.data.id;
-        let responseCord = await fetch('https://agile-mountain-75806.herokuapp.com/api/points', {
-          method: 'POST',
-          body: JSON.stringify({
-              points: savedLocations,
-              route_id: route_id, 
-          }),
-          headers: {
-              'Content-Type': 'application/json',
-          },
-        });
-        let responseCordJSON = await responseCord.json();
-
-      savedRouters.push(...[
+      await savedRouters.push(...[
         {
+          user_id: ((Global.user_id !='') ? Global.user_id : -1 ),
+          id: ((Global.user_id !='') ? route_id : -(new Date(timerStart)) ) ,
           points: savedLocations,
           start_datetime: new Date(timerStart).toISOString(), 
           end_datetime: new Date().toISOString(),
@@ -329,9 +338,14 @@ export default class MapScreen extends React.Component {
           category: category,
         }]);
 
-    }
-
-      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
+    
+      if(Global.user_id !=''){
+        await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
+      }
+      else{
+        await AsyncStorage.setItem(memory, JSON.stringify(savedRouters));
+      }
+        
     }
 
   // } catch (error) {
@@ -554,6 +568,7 @@ export default class MapScreen extends React.Component {
     const edgePadding = (Platform.OS === 'android') ? androidEdgePadding : iosEdgePadding;
     return edgePadding;
 }
+
 
 startTimer = () =>{
   const timerNow = new Date().getTime();
