@@ -49,6 +49,7 @@ _log_out = async () => {
   }
 }
 
+
 const CustomDrawerContentComponent  = (props) => (
   <SafeAreaView style = {{flex: 1}}>
     <View 
@@ -58,6 +59,20 @@ const CustomDrawerContentComponent  = (props) => (
           style ={{marginTop:30, marginBottom:20, height: 120, borderRadius:30,backgroundColor:'white' }}
            />
     </View>
+    {Global.user_id != '' &&
+      <View style={{paddingTop: 5, justifyContent:'center', alignItems:'center'}}>
+        <Image  
+          source = {{
+            uri: Global.user_photo.toString(),
+            method: 'POST',
+            headers: {Pragma: 'no-cache' },
+            body: 'elo',
+          }}
+          style ={{width: 60, height: 60, borderRadius: 60 / 2}}
+        />
+        <Text>{Global.user_name}</Text>
+      </View>
+    }
     <ScrollView>
       <DrawerItems {...props}/>
         <View style={{alignItems: 'center', paddingTop: 10}}>
@@ -87,24 +102,13 @@ const SaveMapStack = createStackNavigator({
         headerRight:(
           <Ionicons style = {{paddingRight: 10}}
           onPress={()=>navigation.openDrawer()}
-          name="md-menu" size={30} />
+          name="md-menu" size={30} color="white"/>
         ),
       }
     },
     },
   ViewSaveMap:{screen: ViewSaveMapScreen,
-    navigationOptions:({navigation})=>{
-      return{
-        //  headerTitle : navigation.state.params.name || null,
-        headerTitle: `${navigation.getParam('name', '')}`,
-        headerRight:(
-          <Ionicons style = {{paddingRight: 10}}
-          onPress={()=>navigation.openDrawer()}
-          name="md-menu" size={30} />
-        ),
-      }
-    },
-  
+    // navigationOptions in ViewSaveMap.js
   },
 
 },
@@ -170,7 +174,15 @@ const DashboardTabNavigator = createMaterialBottomTabNavigator({
     const {routeName} = navigation.state.routes [navigation.state.index];
     return{
       header:null,
-      headerTitle: routeName
+      headerTitle: routeName,
+      // tabBarOnPress: ({previousScene,scene, jumpToIndex}) => {
+      //   if(previousScene.index==2){
+
+      //   }else{
+      //   console.log('onPress:', scene.route);
+      //   jumpToIndex(scene.index);
+      // }
+      // }
     };
   },
   shifting: false, //Color for the tab bar when the tab corresponding to the screen is active. Used for the ripple effect. This is only supported when shifting is true.

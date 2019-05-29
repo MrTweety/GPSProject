@@ -7,18 +7,18 @@ import {
   import moment from "moment";
   import BottomDrawer from 'rn-bottom-drawer';
   import { DataTable } from 'react-native-paper'
-  import { Ionicons} from '@expo/vector-icons';
+  import { Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 
-  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
   import DialogInput from '../Explore/MyDialogImputs';
-
+  import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
+  import geolocationService from '../Explore/geolocationService';
+  import Global from '../globals.js';
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
 
   const LATITUDE_DELTA = 0.04;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
-
 
 class ViewSaveMap extends Component {
 
@@ -29,17 +29,16 @@ class ViewSaveMap extends Component {
     const { navigation } = this.props;
     const name = navigation.getParam('name', -1);
     const item = navigation.getParam('item', 0);
-
-
-
+    // navigation.setParams({ deleteThis: this.showDeleteDialog(true,2) });
+    
     this.state = {
       coordinatesMy:[],
       isDialogVisible_DeleteSaveRouteDecision: false,
       item:item,
-      coordinatesMy: (item == [] ? [] : item.coordinates ),
+      coordinatesMy: (item == [] ? [] : item.points ),
       exampleRegion: {
-          latitude: (item == [] ? 50.0713231 : item.coordinates[0].latitude ),
-          longitude:(item == [] ? 19.9404102 : item.coordinates[0].longitude ),
+          latitude: (item == [] ? 50.0713231 : item.points[0].latitude ),
+          longitude:(item == [] ? 19.9404102 : item.points[0].longitude ),
           latitudeDelta: LATITUDE_DELTA,
           longitudeDelta: LONGITUDE_DELTA
       },
@@ -48,8 +47,78 @@ class ViewSaveMap extends Component {
   }
 
 
+  static navigationOptions = ({ navigation }) => {
+    return {
+      headerTitle: `${navigation.getParam('name', '')}`,
+      headerRight:(
+        <View style={{flexDirection: 'row'}} >
+          <MaterialCommunityIcons style = {{paddingRight: 10}}
+            onPress={navigation.getParam('deleteThis')}
+            name="delete" size={30} color="white"/>
 
-     onPressZoomIn() {
+          <Ionicons style = {{paddingRight: 10}}
+            onPress={()=>navigation.openDrawer()}
+            name="md-menu" size={30} color="white"/>
+        </View>
+      ),
+    };
+  };
+
+  
+
+  componentDidMount() {
+    this.getLocationName();
+    this.props.navigation.setParams({ deleteThis: this.showDeleteDialog});
+  }
+
+
+  showDeleteDialog = ()=>{
+    const {item} = this.state ;
+    console.log("showDeleteDialog",item);
+    if(item != 0){
+      this.setState(()=>({indexToDelete: item }));
+    }
+    this.setState({isDialogVisible_DeleteSaveRouteDecision: true});
+
+  }
+
+  hideDeleteDialog = () =>{
+    this.setState({isDialogVisible_DeleteSaveRouteDecision: false});
+  }
+
+
+
+  deleteSaveRoute =async () => {
+
+    coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+    console.log('coordinates.length:', coordinates.length)
+    const {indexToDelete} = this.state;
+    console.log('indexToDelete:', indexToDelete)
+
+    const indexToDeleteNumber = coordinates.findIndex((element)=>{
+      console.log('element',element)
+      return element.id == indexToDelete.id;
+    });
+    console.log('indexToDeleteNumber:', indexToDeleteNumber)
+
+    if(indexToDeleteNumber >= 0){
+      coordinates.splice(indexToDeleteNumber, 1);
+      console.log('coordinates.length:', coordinates.length)
+      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
+        this.hideDeleteDialog();
+        this.setState(()=>({indexToDelete: -1 }));
+      }); 
+    }
+    else{
+      this.hideDeleteDialog();
+    }
+
+    this.props.navigation.navigate('SaveMap',{refreshing:true});
+  }
+
+  
+
+    onPressZoomIn() {
       this.region = {
         latitude: this.state.exampleRegion.latitude,
         longitude: this.state.exampleRegion.longitude,
@@ -68,7 +137,7 @@ class ViewSaveMap extends Component {
       this.map.animateToRegion(this.region, 100);
     }
   
-     onPressZoomOut() {
+    onPressZoomOut() {
       region = {
         latitude: this.state.exampleRegion.latitude,
         longitude: this.state.exampleRegion.longitude,
@@ -95,6 +164,20 @@ class ViewSaveMap extends Component {
       });
   }
 
+  getLocationName = async () => {
+    const {
+      coordinatesMy,
+    } = this.state;
+
+    const locStart = await geolocationService.fetchNameInfo(coordinatesMy[0]);
+          let index = coordinatesMy[coordinatesMy.length-1];
+          const locEnd = await geolocationService.fetchNameInfo(index);
+          this.setState({
+            locStart:locStart,
+            locEnd:locEnd
+          })
+  }
+
 
     render() {
 
@@ -103,23 +186,18 @@ class ViewSaveMap extends Component {
             coordinatesMy,
           } = this.state;
 
+          
 
         return(
 
         <View style={styles.container}>
-
-        
-
-
-
             <View style={{ flex: 1, padding:0, paddingBottom:0, margin:0, justifyContent: 'center',}}>
             {!!exampleRegion && (
                 <MapView
                 style={{ flex: 1}}
-                // region={exampleRegion}
                 showsUserLocation={true}
-                showsMyLocationButton={true}
-                followUserLocation={true}
+                showsMyLocationButton={false}
+                followUserLocation={false}
                 onRegionChange={this.onRegionChange.bind(this)}
                 initialRegion={exampleRegion}
                 provider="google"
@@ -136,10 +214,10 @@ class ViewSaveMap extends Component {
             ) : (
               false
             )}
-                
-            
+
             </MapView>
             )}
+
             <View style={styles.buttonContainer}>
               <TouchableOpacity onPress = {()=>this.onPressZoomOut()} style={[styles.bubble]} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>+</Text>
@@ -147,22 +225,34 @@ class ViewSaveMap extends Component {
               <TouchableOpacity onPress = {()=>this.onPressZoomIn()} style={[styles.bubble]} >
                 <Text style={{ fontSize: 20, fontWeight: 'bold' }}>-</Text>
               </TouchableOpacity>
+
             </View>
+
         </View>
         <BottomDrawer ref={ref => this.drawer = ref}
         containerHeight={2*screen.height/3 }
         offset={42}
         startUp={false}
         backgroundColor={'#fcf8e3'}
-        onExpanded = {() => {this.setState({position:'UpPosition'})}}
-        onCollapsed = {() => {this.setState({position:'DownPosition'}) }}
+        onExpanded = {() => {console.log("    onExpanded function"); this.setState({position:'UpPosition'})}}
+        onCollapsed = {() => {console.log("    onCollapsed function"); this.setState({position:'DownPosition'}) }}
       >
       {this.renderContent()}
       </BottomDrawer>
 
+      <DialogInput 
+                isDialogVisible={this.state.isDialogVisible_DeleteSaveRouteDecision}
+                title={"Do you want to delete this track?"}
+                message={""}
+                textInputVisible = {false}
+                submitInput={ () => {this.deleteSaveRoute()} }
+                closeDialog={ () => {this.hideDeleteDialog()}}
+                submitText={"Delete"}>
+      </DialogInput>
+
 
       </View>
-    );
+    ); 
     }
 
 
@@ -186,22 +276,22 @@ class ViewSaveMap extends Component {
             <DataTable>
               <DataTable.Row style={{backgroundColor: '#d9edf7'}}>
                 <DataTable.Cell>Distance</DataTable.Cell>
-                <DataTable.Cell numeric>{item.distance} km</DataTable.Cell>
+                <DataTable.Cell numeric>{item.length} km</DataTable.Cell>
               </DataTable.Row>
 
               <DataTable.Row style={{backgroundColor: '#fcf8e3'}}>
                 <DataTable.Cell>Duration</DataTable.Cell>
-                <DataTable.Cell numeric>{moment(item.timeEnd-item.timeStart).format("HH:mm:ss")}</DataTable.Cell>
+                <DataTable.Cell numeric>{moment((new Date(item.end_datetime))-(new Date(item.start_datetime))).format("HH:mm:ss")}</DataTable.Cell>
               </DataTable.Row>
 
               <DataTable.Row style={{backgroundColor: '#d9edf7'}}>
                 <DataTable.Cell>From</DataTable.Cell>
-                <DataTable.Cell numeric>{item.locStart}</DataTable.Cell>
+                <DataTable.Cell numeric>{this.state.locStart}</DataTable.Cell>
               </DataTable.Row>
 
               <DataTable.Row style={{backgroundColor: '#fcf8e3', borderBottomWidth:0}}>
                 <DataTable.Cell>To</DataTable.Cell>
-                <DataTable.Cell  numeric>{item.locEnd}</DataTable.Cell>
+                <DataTable.Cell  numeric>{this.state.locEnd}</DataTable.Cell>
               </DataTable.Row>
             </DataTable>
 
@@ -258,7 +348,7 @@ const styles = StyleSheet.create({
       position: 'absolute',
       bottom: 0,
     // left: 0,
-    // right: 0,
+    right: 0,
     // backgroundColor: 'white',
     padding: 10,
     marginBottom:50,
