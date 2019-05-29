@@ -5,6 +5,7 @@ import {List, ListItem, SearchBar, } from 'react-native-elements';
 import moment from "moment";
 import {getSavedLocations,STORAGE_KEY_USER_ROUTERS } from '../Explore/MyStorage.js'
 import DialogInput from '../Explore/MyDialogImputs';
+import Global from '../globals.js';
 
   const screen = Dimensions.get('window');
   const ASPECT_RATIO = screen.width / screen.height;
@@ -131,8 +132,9 @@ class SaveMap extends Component {
 
     async fetchData(){
 
-      let url = 'https://agile-mountain-75806.herokuapp.com/api/user/'+'20101010'+'/routes'
-      let data = await fetch(url, {
+      if(Global.user_id != '')
+      {
+      let data = await fetch('https://agile-mountain-75806.herokuapp.com/api/user/'+Global.user_id+'/routes', {
         method: 'GET',
       });
       let dataJSON = await data.json();
@@ -144,6 +146,7 @@ class SaveMap extends Component {
           data:coordinates.reverse(),
           refreshing: false,
         });
+      }
       }
 
     render() {

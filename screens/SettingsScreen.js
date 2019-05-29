@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet,TouchableOpacity } from 'react-native';
 import moment from "moment";
+import Global from '../globals.js';
 
 const cordd = [
     {latitude:49.9069983,longitude:19.8103},
@@ -17,7 +18,7 @@ class SettingsScreen extends Component {
             method: 'POST',
             body: JSON.stringify({
               route: {
-                user_id: "20101010",
+                user_id: Global.user_id,
                 exam_start: new Date().toISOString(), 
                 exam_end: new Date().toISOString(),
                 name: 'trackName',
@@ -52,7 +53,7 @@ class SettingsScreen extends Component {
     }
 
     getDat= async() =>{
-        let abc = await fetch('https://agile-mountain-75806.herokuapp.com/api/user/'+'10101010'+'/routes', {
+        let abc = await fetch('https://agile-mountain-75806.herokuapp.com/api/user/'+Global.user_id+'/routes', {
             method: 'GET',
           });
           let abcd = await abc.json();

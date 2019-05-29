@@ -1,9 +1,13 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, Button, Image, TouchableOpacity } from 'react-native';
 import firebase  from  'firebase';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+import Global from '../globals.js';
 
-class LoginScreen extends Component {
+const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';
+
+class LoginScreen extends Component { 
 
      isUserEqual = (googleUser, firebaseUser) => {
         if (firebaseUser) {
@@ -56,6 +60,10 @@ class LoginScreen extends Component {
                   })
                 }
 
+                Global.user_id = googleUser.user.id;
+                Global.user_name = googleUser.user.name;
+                Global.user_accessToken = googleUser.accessToken;
+                Global.user_photo = googleUser.user.photoUrl;
             })
             .catch(function(error) {
               // Handle Errors here.
@@ -73,20 +81,15 @@ class LoginScreen extends Component {
         }.bind(this));
       };
 
-
-
-
-
      signInWithGoogleAsync = async ()=>{
         try{
             
-            const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';//isoClientId
+            // const clientId = '173882404308-rn3heh5858h3563ig1dehccm54ueeo4m.apps.googleusercontent.com';//isoClientId
 
              //const clientId = '173882404308-tsu3puci6ncdl08e9q4poqj6f0at0nv3.apps.googleusercontent.com'; //web
             const result = await Expo.Google.logInAsync({ clientId });
             if (result.type === 'success') {
                 clientId2 =clientId;
-                abc = result.accessToken;
 
                 this.onSignIn(result);
                 console.log(result.user);
@@ -110,14 +113,34 @@ class LoginScreen extends Component {
 
     render() {
         return (
-            <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
+            <View style={{flex:1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
 
+              <View style ={styles.login_screen_view_header}>
+                <Text style={{fontSize: 18, fontWeight: 'bold'}}>
+                  Welcome in Driving Test!
+                </Text>
 
-              <Button title='Login Google' onPress = {()=> this.signInWithGoogleAsync()} />
-              <Text>
-                WelcomeScreen:
-              </Text>
-              <Button title='Continue without logging' onPress = {()=> this.props.navigation.navigate('Dashboard') } />
+                <View style ={{alignItems: 'center', justifyContent: 'center', paddingTop: 100}}>
+                  <Image source={require('../assets/logo2_3.png')}  />
+                </View>
+
+              </View>
+
+              <View style ={styles.login_screen_view}>
+                <View style={{padding: 10}}>
+                  <TouchableOpacity onPress = {()=> this.signInWithGoogleAsync()} style={styles.my_button} activeOpacity = {0.8}>
+                    <Text style={{color: "white"}}>Login with Google </Text>
+                    <MaterialCommunityIcons name={"google-plus"} size={30} color="white" />  
+                  </TouchableOpacity> 
+                </View>
+
+                <View style = {{padding: 10}}>
+                  <TouchableOpacity onPress = {()=> this.props.navigation.navigate('Dashboard') } style={[styles.my_button,{backgroundColor: "#4d9ceb"}]} activeOpacity = {0.8}>
+                    <Text style={{color: "white"}}>Continue without logging</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
             </View>
             
           );
@@ -127,3 +150,32 @@ class LoginScreen extends Component {
 
 
 export default LoginScreen;
+
+const styles = StyleSheet.create({
+
+  login_screen_view_header:{
+    padding: 1,
+    flex: 1,
+    paddingTop: 40,
+    height: 200,
+  },
+  login_screen_view:{
+    flex: 1,
+    paddingTop: 30,
+    width: '100%',
+  },
+  my_button:{
+    backgroundColor: '#d95333',
+    justifyContent:'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    borderRadius: 3,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height:5 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 5
+  }
+
+});

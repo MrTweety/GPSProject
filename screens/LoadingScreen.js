@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator } from 'react-native';
 
- import firebase  from  'firebase';
+import firebase  from  'firebase';
+
+import Global from '../globals.js';
 
 class LoadingScreen extends Component {
     componentDidMount(){
@@ -18,9 +20,14 @@ class LoadingScreen extends Component {
                     longitude: 19.9404102,
                     latitudeDelta: 0.0922,
                     longitudeDelta: 0.0421,
+
                   };
-                this.props.navigation.navigate('Map') ;
-                // console.log('user', user)
+                  console.log('Loading Screen user data:', user);
+                  Global.user_id = user.providerData[0].uid;
+                  Global.user_name = user.providerData[0].displayName;
+                  Global.user_photo = user.photoURL;
+                  console.log('User photo url:   ', Global.user_photo);
+                  this.props.navigation.navigate('Map') ;
             }
             else{
 
@@ -36,7 +43,7 @@ class LoadingScreen extends Component {
             <View style={{flex:1, alignItems: 'center', justifyContent: 'center'}}>
                 <ActivityIndicator size='large' />
             </View>
-            
+
           );
     }
 
