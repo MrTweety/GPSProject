@@ -272,56 +272,48 @@ export default class MapScreen extends React.Component {
   }
 
   async stopLocationSave() {
-    const {savedLocations, timerStart, trackName, distance, category } = this.state;
+    // try {
+      const {savedLocations, timerStart, trackName, distance, category } = this.state;
 
-    if(savedLocations && savedLocations.length>1){
+      if(savedLocations && savedLocations.length>1){
 
-    const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
+      const savedRouters = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
 
-    if(savedLocations){
-      // console.log('savedLocations:', savedLocations)
-      
-      // const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
-      // let index = savedLocations[savedLocations.length-1];
+      if(savedLocations){
+        // const locStart = await geolocationService.fetchNameInfo(savedLocations[0]);
+        // let index = savedLocations[savedLocations.length-1];
+        // const locEnd = await geolocationService.fetchNameInfo(index);
 
-      // const locEnd = await geolocationService.fetchNameInfo(index);
+      let response = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes', {
+          method: 'POST',
+          body: JSON.stringify({
+            route: {
+              user_id: '20101010',
+              exam_start: new Date(timerStart).toISOString(), 
+              exam_end: new Date().toISOString(),
+              name: trackName,
+              length: (distance).round(3),
+              category: category
+          }
+          }),
+          headers: {
+              'Content-Type': 'application/json',
+          },
+        });
 
-
-    let response = await fetch('https://agile-mountain-75806.herokuapp.com/api/routes', {
-        method: 'POST',
-        body: JSON.stringify({
-          route: {
-            user_id: '20101010',
-            exam_start: new Date(timerStart).toISOString(), 
-            exam_end: new Date().toISOString(),
-            name: trackName,
-            length: (distance).round(3),
-            category: category
-        }
-        }),
-        headers: {
-            'Content-Type': 'application/json',
-        },
-      });
-
-      let responseJSON = await response.json();
-      // console.log('responseJSON:', responseJSON)
-      let route_id = responseJSON.data.id;
-      // console.log('route_id:', route_id)
-
-      let responseCord = await fetch('https://agile-mountain-75806.herokuapp.com/api/points', {
-        method: 'POST',
-        body: JSON.stringify({
-            points: savedLocations,
-            route_id: route_id, 
-        }),
-        headers: {
-            'Content-Type': 'application/json',
-        },
-      });
-      let responseCordJSON = await responseCord.json();
-      // console.log('responseCord:', responseCord)
-      // console.log('responseCordJSON:', responseCordJSON)
+        let responseJSON = await response.json();
+        let route_id = responseJSON.data.id;
+        let responseCord = await fetch('https://agile-mountain-75806.herokuapp.com/api/points', {
+          method: 'POST',
+          body: JSON.stringify({
+              points: savedLocations,
+              route_id: route_id, 
+          }),
+          headers: {
+              'Content-Type': 'application/json',
+          },
+        });
+        let responseCordJSON = await responseCord.json();
 
       savedRouters.push(...[
         {
@@ -331,15 +323,16 @@ export default class MapScreen extends React.Component {
           name: trackName,
           length: (distance).round(3),
           category: category,
-          // locStart: locStart,
-          // locEnd: locEnd,
-
         }]);
 
     }
 
-    await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
-  }
+      await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(savedRouters));
+    }
+
+  // } catch (error) {
+  //   console.error(error);
+  // }
   }
 
 
@@ -367,7 +360,6 @@ export default class MapScreen extends React.Component {
   }
 
   discard(){
-    // console.log("discard");
     this.stopTracking(false);
     this.setState({isDialogVisible_DiscardDecision: false});
   }
@@ -444,9 +436,7 @@ export default class MapScreen extends React.Component {
   };
 
   onAccuracyChange = () => {
-    //TODO: czy na pewno potrzebne?
     const accuracy = locationAccuracyStates[this.state.accuracy];
-
     this.setState({ accuracy });
 
     if (this.state.isTracking) {
@@ -610,8 +600,8 @@ stopTimer = () =>{
 
         <View style={styles.buttons} pointerEvents="box-none">
           <View style={styles.topButtons}>
-            <View style={styles.buttonsColumn}>
-              {Platform.OS === 'android' ? null : (
+            {/* <View style={styles.buttonsColumn}>
+              { Platform.OS === 'android' ? null : (
 
                 <Button
                 buttonStyle={[styles.bubble, styles.button]}
@@ -632,7 +622,7 @@ stopTimer = () =>{
                 style={styles.bubble}
                 onPress={this.onAccuracyChange}
               />
-            </View>
+            </View> */}
           </View>
           <View style={styles.buttonsColumn}>
             <View style={styles.bottomButtons}>
@@ -741,16 +731,12 @@ stopTimer = () =>{
         closeDialog={ () => {this.showDiscard(false)}}
         submitText={"DISCARD"}>
       </DialogInput>
-
-      <View style={styles.mapDrawerOverlay} />
-      
-    </View>
-
     
+      <View style={styles.mapDrawerOverlay} />
+    </View>
     );
   }
 }
-
 
 TaskManager.defineTask(
   LOCATION_TASK_NAME,
@@ -767,7 +753,7 @@ TaskManager.defineTask(
         longitude: coords.longitude,
       }));
 
-      // console.log(`Received new locations at ${new Date()}:`, locations);
+      console.log(`Received new locations at ${new Date()}:`, locations);
 
       endElement = savedLocations[savedLocations.length - 1];
 
