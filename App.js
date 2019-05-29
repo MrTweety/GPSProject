@@ -212,13 +212,13 @@ const DashboardStackNavigator = createStackNavigator({
 });
 
 const AppDrawerNavigator = createDrawerNavigator({
-  // LoginScreen : {
-  //   screen: LoginScreen,
-  //   navigationOptions: {
-  //     drawerLabel:"Login Screen",
-  //     drawerIcon: ({ tintColor }) => <Entypo name={"login"} size={26} color={tintColor} />
-  //   }
-  // },
+  LoginScreen : {
+    screen: LoginScreen,
+    navigationOptions: {
+      drawerLabel:() => null,
+      drawerIcon: () => null,
+    }
+  },
   Dashboard : {
     screen: DashboardStackNavigator,
     navigationOptions: {

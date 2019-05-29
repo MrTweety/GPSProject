@@ -48,27 +48,27 @@ class SaveMap extends Component {
     if(itemToDelete && itemToDelete != -1){
       let itemToDeleteID = itemToDelete.id;
       if(itemToDeleteID){
-        let url = `https://agile-mountain-75806.herokuapp.com/api/routes/${itemToDeleteID}`
-        let response = await fetch(url, {
-          method: 'DELETE',
-        });        
+        if(Global.user_id !=''){
+          let url = `https://agile-mountain-75806.herokuapp.com/api/routes/${itemToDeleteID}`
+          let response = await fetch(url, {
+            method: 'DELETE',
+          });
+        }
+        else{
+          var memory = STORAGE_KEY_USER_ROUTERS+'ghost';
+          coordinates = await getSavedLocations(memory);
+          const indexToDeleteNumber = coordinates.findIndex((element)=>{
+            return element.id == itemToDeleteID;
+          });
+
+          if(indexToDeleteNumber >= 0){
+            coordinates.splice(indexToDeleteNumber, 1);
+            await AsyncStorage.setItem(memory, JSON.stringify(coordinates));
+          }
+        }
       }
     }
-
-
-    // coordinates = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-    
-    // const indexToDeleteNumber = coordinates.findIndex((element)=>{
-    //   return element.end_datetime == itemToDelete.end_datetime;
-    // });
-
-    // if(indexToDeleteNumber >= 0){
-    //   coordinates.splice(indexToDeleteNumber, 1);
-    //   await AsyncStorage.setItem(STORAGE_KEY_USER_ROUTERS, JSON.stringify(coordinates)).then(() => {
-    //     this.showDeleteDialog(false);
-    //     this.setState(()=>({itemToDelete: -1 }));
-    //   }); 
-    // }
+    this.setState(()=>({itemToDelete: -1 }));
     this.showDeleteDialog(false);
     this.handleRefresh();
   }
@@ -134,20 +134,23 @@ class SaveMap extends Component {
 
       if(Global.user_id != '')
       {
-      let data = await fetch('https://agile-mountain-75806.herokuapp.com/api/user/'+Global.user_id+'/routes', {
-        method: 'GET',
-      });
-      let dataJSON = await data.json();
+        let data = await fetch('https://agile-mountain-75806.herokuapp.com/api/user/'+Global.user_id+'/routes', {
+          method: 'GET',
+        });
+        let dataJSON = await data.json();
+        coordinates = dataJSON.data;
+      }else{
+        let memory = STORAGE_KEY_USER_ROUTERS+'ghost';
+        coordinates = await getSavedLocations(memory);
+        // console.log('coordinates:', coordinates)
+      }
 
-      coordinates = dataJSON.data;
-      // coordinates2 = await getSavedLocations(STORAGE_KEY_USER_ROUTERS);
-      // console.log('coordinates:', coordinates2)
         this.setState({
           data:coordinates.reverse(),
           refreshing: false,
         });
       }
-      }
+      
 
     render() {
 
@@ -187,7 +190,7 @@ class SaveMap extends Component {
           
                     />
                     )}
-                keyExtractor = {item => item.id.toString(8)}
+                keyExtractor = {item => item.id.toString()}
                 ItemSeparatorComponent = {this.renderSeparator}
                 ListHeaderComponent = {this.renderHeader}
                 ListFooterComponent = {this.renderFooter}
