@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator } from 'react-native';
 
-import firebase  from  'firebase';
+import firebase from 'firebase/app'
+
 
 import Global from '../globals.js';
 
@@ -11,7 +12,7 @@ class LoadingScreen extends Component {
     }
 
     checkIfLoggedIn = () => {
-        firebase.auth().onAuthStateChanged(
+        firebase.default.auth().onAuthStateChanged(
             function(user){
             if(user){
                 console.log('userelo 320');

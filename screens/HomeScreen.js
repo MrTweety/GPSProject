@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import {createDrawerNavigator} from 'react-navigation';
-import firebase from 'firebase';
+
 import LoginScreen from '../screens/LoginScreen'
 import Global from '../globals.js';
 

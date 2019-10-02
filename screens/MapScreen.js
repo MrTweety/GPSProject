@@ -16,16 +16,25 @@ import {
 
 } from 'react-native';
 import { Button } from 'react-native-elements';
-import {
-  IntentLauncherAndroid,
-  MapView,
-  Constants,
-  Permissions,
-  Location,
-  Marker,
-  TaskManager,
-  KeepAwake
-} from 'expo';
+import * as IntentLauncherAndroid from 'expo-intent-launcher';
+import MapView from 'react-native-maps';
+import Constants from 'expo-constants';
+import * as Location from 'expo-location';
+import * as Permissions from 'expo-permissions';
+import * as TaskManager from 'expo-task-manager';
+import KeepAwake from 'expo-keep-awake';
+
+// import {
+//   IntentLauncherAndroid,
+//   MapView,
+//   Constants,
+//   Permissions,
+//   Location,
+//   Marker,
+//   TaskManager,
+//   KeepAwake
+// } from 'expo';
+
 import { EventEmitter, EventSubscription } from 'fbemitter';
 import { NavigationEvents } from 'react-navigation';
 import { FontAwesome, MaterialIcons,Entypo } from '@expo/vector-icons';

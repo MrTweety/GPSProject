@@ -1,9 +1,6 @@
 import React, { Component} from 'react';
 import {Button,AsyncStorage, Alert, View, Text, Animated, StyleSheet,TouchableOpacity, PanResponder, Dimensions,Image, ScrollView, RefreshControl  } from 'react-native';
-import {
-    MapView,
-
-  } from 'expo';
+import MapView from 'react-native-maps';
   import moment from "moment";
   import BottomDrawer from 'rn-bottom-drawer';
   import { DataTable } from 'react-native-paper'
